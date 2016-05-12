@@ -155,7 +155,7 @@ __inline static int calcmf(xf_t *xf, const double *m,
     double *mf, double *var, int docorr)
 {
   int k, ifr, nfr = xf->nfr, np = xf->np, ns = np / 2;
-  double xc[2][3], f[2];
+  double xc[2][3], f[2], std[2];
   corr_t *corr = NULL;
 
   if ( docorr ) {
@@ -183,9 +183,10 @@ __inline static int calcmf(xf_t *xf, const double *m,
   for ( k = 0; k < 2; k++ ) {
     mf[k] /= nfr;
     var[k] = var[k] / nfr - mf[k] * mf[k];
+    std[k] = sqrt( var[k] );
   }
   printf("fr %g, %g | fa %g, %g | nfr %d\n",
-      mf[0], sqrt(var[0]), mf[1], sqrt(var[1]), nfr);
+      mf[0], std[0], mf[1], std[1], nfr);
 
   if ( docorr ) {
     corr_save(corr, 1, 10, 1e-2, 1, "corr.dat");

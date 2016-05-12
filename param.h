@@ -32,22 +32,7 @@ static void param_init(param_t *m)
 
 
 
-/* compute dependent parameters
- * call this function only once
- * the second call will miss supposedly default parameters */
-static void param_compute(param_t *m)
-{
-}
-
-
-
 /* clean up */
-static void param_finish(param_t *m)
-{
-}
-
-
-
 /* print help message and die */
 static void param_help(const param_t *m)
 {
@@ -90,91 +75,6 @@ static int param_getint(param_t *m,
 
 
 
-/* get double */
-static double param_getdouble(param_t *m,
-    const char *key, const char *val)
-{
-  if ( val == NULL ) {
-    fprintf(stderr, "no value for %s\n", key);
-    param_help(m);
-  }
-  return atof(val);
-}
-
-
-
-/* select an option */
-static int param_selectoption(param_t *m,
-    const char *key, const char *val,
-    const char *names[][MAX_OPT_ALIASES], int cnt)
-{
-  int i, j;
-
-  if ( val == NULL ) {
-    fprintf(stderr, "no value for %s\n", key);
-    param_help(m);
-  }
-
-  /* loop over options */
-  for ( i = 0; i < cnt; i++ ) {
-    /* loop over aliases */
-    for ( j = 0; j < MAX_OPT_ALIASES; j++ ) {
-      if ( names[i][j] == NULL
-        || names[i][j][0] == '\0' ) {
-        break;
-      }
-
-      if ( strcmpfuzzy(names[i][j], val) == 0 ) {
-        return i;
-      }
-    }
-  }
-
-  /* try to treat `val` is a number */
-  if ( isdigit(val[0]) ) {
-    i = atoi(val);
-    if ( i < 0 || i >= cnt ) i = 0;
-  } else {
-    i = 0;
-  }
-
-  return i;
-}
-
-
-
-/* get a boolean/integer value */
-static int param_getbool(param_t *m,
-    const char *key, const char *val)
-{
-  if ( val == NULL || val[0] == '\0' ) {
-    return 1;
-  }
-
-  if ( isdigit(val[0]) ) {
-    return atoi(val);
-  }
-
-  if ( strcmpfuzzy(val, "no") == 0
-    || strcmpfuzzy(val, "false") == 0
-    || strcmpfuzzy(val, "n") == 0
-    || strcmpfuzzy(val, "f") == 0 ) {
-    return 0;
-  } else if ( strcmpfuzzy(val, "yes") == 0
-           || strcmpfuzzy(val, "true") == 0
-           || strcmpfuzzy(val, "y") == 0
-           || strcmpfuzzy(val, "t") == 0 ) {
-    return 1;
-  } else {
-    fprintf(stderr, "unknown value [%s] for %s\n", val, key);
-    param_help(m);
-  }
-
-  return 1;
-}
-
-
-
 /* match string key and value pairs */
 static int param_keymatch(param_t *m,
     const char *key, const char *val)
@@ -192,7 +92,7 @@ static int param_keymatch(param_t *m,
   else if ( strcmp(key, "usemass") == 0
     || strcmp(key, "mass") == 0 )
   {
-    m->usemass = param_getbool(m, key, val);
+    m->usemass = 1;
   }
   else if ( strcmp(key, "psf") == 0
          || strcmp(key, "fnpsf") == 0 )
@@ -201,7 +101,7 @@ static int param_keymatch(param_t *m,
   }
   else if ( strcmp(key, "corr") == 0 )
   {
-    m->docorr = param_getbool(m, key, val);
+    m->docorr = 1;
   }
   else
   {
@@ -263,8 +163,6 @@ static int param_doargs(param_t *m, int argc, char **argv)
       }
     }
   }
-
-  param_compute(m);
 
   return 0;
 }

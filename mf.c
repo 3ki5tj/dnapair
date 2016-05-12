@@ -33,7 +33,7 @@ static void rottrans(xf_t *xf, double *mass, int ns)
 static int do_mf(param_t *par, int argc, char **argv)
 {
   xf_t *xf;
-  double *mass = NULL, mf[3];
+  double *mass = NULL, mf[2], var[2];
   int np = par->np;
 
   xf = xf_open(np);
@@ -62,7 +62,7 @@ static int do_mf(param_t *par, int argc, char **argv)
   rottrans(xf, mass, np / 2);
 
   /* compute the mean force */
-  calcmf(xf, mass, mf, par->docorr);
+  calcmf(xf, mass, mf, var, par->docorr);
 
   xf_close(xf);
   if ( par->usemass ) {
@@ -79,6 +79,5 @@ int main(int argc, char **argv)
   param_init(par);
   param_doargs(par, argc, argv);
   do_mf(par, argc, argv);
-  param_finish(par);
   return 0;
 }
