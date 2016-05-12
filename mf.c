@@ -52,7 +52,9 @@ static void mf_dolist(xf_t *xf, char **fns, int cnt,
 
   /* load all files in the commandline argument */
   for ( i = 0; i < cnt; i++ ) {
+    /* compute the mean force as we scan the data */
     calcmf_inplace(xf, fns[i], mass, sums);
+
     /* convert the sums to averages and standard deviations */
     for ( j = 0; j < 2; j++ ) {
       ave[j] = sums[j][1] / sums[j][0];
@@ -152,13 +154,12 @@ static char **getlist(param_t *par, int *cnt)
     if ( (fp = fopen(fn, "r")) != NULL ) {
       fclose(fp);
       fns[ (*cnt)++ ] = fn;
-      printf("i %d, cnt %d, %s\n", i + 1, *cnt, fn);
+      //printf("i %d, cnt %d, %s\n", i + 1, *cnt, fn);
     } else {
       continue;
     }
   }
 
-  *cnt = i;
   return fns;
 }
 

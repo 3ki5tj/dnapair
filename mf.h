@@ -208,10 +208,11 @@ __inline static int calcmf_inplace(xf_t *xf, const char *fn,
   char s[256];
   int i, np = xf->np, ns = np / 2;
   clock_t starttime = clock();
-  double nfr0 = sums[0][0], forc, torq, xc[2][3];
+  double nfr0 = sums[0][0], f[2], xc[2][3];
+  int k, once = 0;
 
   if ( (fp = fopen(fn, "r")) == NULL ) {
-    fprintf(stderr, "cannot open %s\n", fn);
+    fprintf(stderr, "calcmf_inplace: cannot open %s\n", fn);
     return -1;
   }
 
@@ -246,22 +247,21 @@ __inline static int calcmf_inplace(xf_t *xf, const char *fn,
     }
 
     /* compute the centers of mass */
-    if ( xf->nfr == 0 ) {
+    if ( !once ) {
       calccom(xf->x, mass, ns, xc[0]);
       calccom(xf->x + ns, mass, ns, xc[1]);
+      once = 1;
     }
 
     /* compute the force and torque */
-    forc = calcrf(xf->f, np);
-    torq = calctorq(xf->x, xf->f, np, xc);
+    f[0] = calcrf(xf->f, np);
+    f[1] = calctorq(xf->x, xf->f, np, xc);
 
-    sums[0][0] += 1;
-    sums[0][1] += forc;
-    sums[0][2] += forc * forc;
-
-    sums[1][0] += 1;
-    sums[1][1] += torq;
-    sums[1][2] += torq * torq;
+    for ( k = 0; k < 2; k++ ) {
+      sums[k][0] += 1;
+      sums[k][1] += f[k];
+      sums[k][2] += f[k] * f[k];
+    }
 
     /* something wrong has happened */
     if ( i < np ) break;
