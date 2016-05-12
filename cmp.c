@@ -26,10 +26,10 @@ int main(int argc, char **argv)
     fnin2 = argv[2];
   }
 
-  xf1 = xf_open(np);
+  xf1 = xf_open(np, 1);
   xf_load(xf1, fnin1, 1); /* only load one frame */
 
-  xf2 = xf_open(np);
+  xf2 = xf_open(np, 1);
   xf_load(xf2, fnin2, 1);
 
   if ( usemass ) {

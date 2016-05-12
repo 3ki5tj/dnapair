@@ -7,6 +7,8 @@ typedef struct {
   int nargs;
   int np; /* total number of atoms in the two DNA's */
   char fninp[FILENAME_MAX]; /* force file */
+  int scanf; /* scan all force files under the directory */
+  char dir[FILENAME_MAX]; /* directory for the above scanning */
   int usemass; /* use mass as weight */
   char fnpsf[FILENAME_MAX]; /* .psf file */
   int docorr; /* compute correlations */
@@ -22,7 +24,9 @@ static void param_init(param_t *m)
 {
   m->nargs = 0;
   m->np = 3798;
-  strcpy(m->fninp, "/Bossman/cllai/share/Cheng/sys.160.rot.120.block.60.fout.dat");
+  strcpy(m->fninp, "/Bossman/cllai/share/Cheng/sys.160.rot.60.block.60.fout.dat");
+  m->scanf = 0;
+  strcpy(m->dir, ".");
   m->usemass = 0;
   strcpy(m->fnpsf, "/Bossman/cllai/share/Cheng/psfpdb/npara.psf");
   m->docorr = 0;
@@ -44,6 +48,8 @@ static void param_help(const param_t *m)
   fprintf(stderr, "Options:\n");
   fprintf(stderr, "  --np=:         set the number of particles, default %d.\n", m->np);
   fprintf(stderr, "  --inp=:        set the input file, default %s.\n", m->fninp);
+  fprintf(stderr, "  --scanf:       scan all force files under the directory, default %d.\n", m->scanf);
+  fprintf(stderr, "  -d, --dir=:    set the scanning directory, default %s (when set, scanf is turned on automatically).\n", m->dir);
   fprintf(stderr, "  --usemass:     use mass as weight, default %d.\n", m->usemass);
   fprintf(stderr, "  --psf=:        set the .psf file, default %s.\n", m->fnpsf);
   fprintf(stderr, "  --corr:        compute correlation functions, default %d.\n", m->docorr);
@@ -88,6 +94,17 @@ static int param_keymatch(param_t *m,
          || strcmp(key, "fninp") == 0 )
   {
     strcpy(m->fninp, val);
+  }
+  else if ( strstartswith(key, "scanf")
+         || strstartswith(key, "scan") )
+  {
+    m->scanf = 1;
+  }
+  else if ( strstartswith(key, "dir")
+         || strcmp(key, "d") == 0 )
+  {
+    strcpy(m->dir, val);
+    m->scanf = 1;
   }
   else if ( strcmp(key, "usemass") == 0
     || strcmp(key, "mass") == 0 )
@@ -153,12 +170,30 @@ static int param_doargs(param_t *m, int argc, char **argv)
      * loop over characters in the options
      * in this way, `-vo' is understood as `-v -o' */
     for ( j = 1; (ch = argv[i][j]) != '\0'; j++ ) {
-      if ( ch == 'v' ) {
+      if ( ch == 'd' ) {
+        q = argv[i] + j + 1;
+        m->scanf = 1;
+        if ( *q != '\0' ) {
+          strcpy(m->dir, q);
+        } else {
+          /* try to look for the next argument
+           * -d /home/data/
+           * the next argument is "/home/data/" */
+          i += 1;
+          if ( i < argc ) {
+            strcpy(m->dir, argv[i]);
+          } else {
+            param_help(m);
+          }
+        }
+        /* skip the rest of the characters in the string */
+        break;
+      } else if ( ch == 'v' ) {
         m->verbose++;
       } else if ( ch == 'h' ) {
         param_help(m);
       } else {
-        fprintf(stderr, "unknown option %s, j %d, ch %c\n", argv[i], j, ch);
+        fprintf(stderr, "unknown option [%s], j %d, ch %c\n", argv[i], j, ch);
         param_help(m);
       }
     }
@@ -166,4 +201,6 @@ static int param_doargs(param_t *m, int argc, char **argv)
 
   return 0;
 }
+
+
 

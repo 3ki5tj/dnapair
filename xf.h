@@ -1,11 +1,11 @@
 
-const int xf_blksz = 500;
 const int xf_nfrx = 1; /* number of x frames to load */
 
 
 typedef struct {
   double (*x)[3]; /* position, size is np */
   float (*f)[3]; /* force, size is np * nfr */
+  int blksz; /* number of frames in each incremental memory allocation */
   int nfr_max; /* capacity */
   int nfr; /* number of frames */
   int np; /* number of atoms in each frame */
@@ -13,16 +13,21 @@ typedef struct {
 
 
 
-static xf_t *xf_open(int np)
+static xf_t *xf_open(int np, int blksz)
 {
   xf_t *xf;
 
+  if ( blksz == 0 ) {
+    blksz = 500;
+  }
+
   xnew(xf, 1);
   xf->np = np;
+  xf->blksz = blksz;
   xf->nfr = 0;
-  xf->nfr_max = xf_blksz;
+  xf->nfr_max = blksz;
   xnew(xf->x, np * xf_nfrx);
-  xnew(xf->f, np * xf_blksz);
+  xnew(xf->f, np * blksz);
   return xf;
 }
 
@@ -30,7 +35,7 @@ static xf_t *xf_open(int np)
 
 static void xf_expand(xf_t *xf)
 {
-  xf->nfr_max += xf_blksz;
+  xf->nfr_max += xf->blksz;
   xrenew(xf->f, xf->np * xf->nfr_max);
 }
 

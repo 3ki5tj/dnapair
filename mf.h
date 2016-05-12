@@ -197,4 +197,87 @@ __inline static int calcmf(xf_t *xf, const double *m,
 }
 
 
+/* load coordinates and compute mean force in the same time
+ * sums[0]: 0 counts, 1 sum, 2 square sum of the radial force
+ * sums[1]: those for the angular torque
+ * */
+__inline static int calcmf_inplace(xf_t *xf, const char *fn,
+    const double *mass, double sums[2][3])
+{
+  FILE *fp;
+  char s[256];
+  int i, np = xf->np, ns = np / 2;
+  clock_t starttime = clock();
+  double nfr0 = sums[0][0], forc, torq, xc[2][3];
+
+  if ( (fp = fopen(fn, "r")) == NULL ) {
+    fprintf(stderr, "cannot open %s\n", fn);
+    return -1;
+  }
+
+  for ( ; ; ) {
+    if ( fgets(s, sizeof s, fp) == NULL
+      || strncmp(s, "timestep", 8) != 0 ) {
+      break;
+    }
+
+    /* read in the coordinates */
+    for ( i = 0; i < np; i++ ) {
+      char tok[4][128];
+
+      if ( fgets(s, sizeof s, fp) == NULL ) {
+        fprintf(stderr, "cannot read frame %d from %s\n",
+            xf->nfr, fn);
+        break;
+      }
+      /* for the coordinates, we only scan them as strings
+       * without converting them to real numbers
+       * This helps saving time */
+      sscanf(s, "%s%s%s%s%f%f%f", tok[0], tok[1], tok[2], tok[3],
+          &xf->f[i][0], &xf->f[i][1], &xf->f[i][2]);
+
+      /* save the coordinates only for the first frame
+       * because those of a later frame are the same */
+      if ( xf->nfr == 0 ) {
+        xf->x[i][0] = atof(tok[1]);
+        xf->x[i][1] = atof(tok[2]);
+        xf->x[i][2] = atof(tok[3]);
+      }
+    }
+
+    /* compute the centers of mass */
+    if ( xf->nfr == 0 ) {
+      calccom(xf->x, mass, ns, xc[0]);
+      calccom(xf->x + ns, mass, ns, xc[1]);
+    }
+
+    /* compute the force and torque */
+    forc = calcrf(xf->f, np);
+    torq = calctorq(xf->x, xf->f, np, xc);
+
+    sums[0][0] += 1;
+    sums[0][1] += forc;
+    sums[0][2] += forc * forc;
+
+    sums[1][0] += 1;
+    sums[1][1] += torq;
+    sums[1][2] += torq * torq;
+
+    /* something wrong has happened */
+    if ( i < np ) break;
+
+    /* after the first frame,
+     * no position will be read */
+    xf->nfr = 1;
+  }
+  fprintf(stderr, "loaded %s in %.3f seconds, %g -> %g frames\n",
+      fn, (double)(clock() - starttime) / CLOCKS_PER_SEC,
+      nfr0, sums[0][0]);
+
+  fclose(fp);
+  return 0;
+}
+
+
+
 
