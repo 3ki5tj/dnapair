@@ -18,6 +18,10 @@ typedef struct {
 } rtpoint_t;
 
 
+
+/* load data from input file,
+ * in which each line has,
+ * distance, angle, mean force, mean torque */
 static rtpoint_t *loaddata(const char *fn, int *cnt)
 {
   rtpoint_t *rt = NULL;
@@ -67,6 +71,7 @@ static rtpoint_t *loaddata(const char *fn, int *cnt)
   fclose(fp);
   return rt;
 }
+
 
 
 /* locate an entry with the appoximate value of dis and ang */
@@ -127,6 +132,7 @@ static void findnb(rtpoint_t *rt, int cnt)
 
 
 
+/* solve the PMF by minimizing the error */
 static void solvepmf(rtpoint_t *rt, int n)
 {
   int i, j, k;
@@ -149,18 +155,18 @@ static void solvepmf(rtpoint_t *rt, int n)
       } else {
         wt = 1.0 / (rt[i].varft + rt[j].varft);
         dx = fmod(rt[i].ang - rt[j].ang + 5 * M_PI, 2 * M_PI) - M_PI;
-        printf("i %2d, j %2d (nb %d), dx %8.3f, ang %8.3f vs %8.3f, dis %8.3f vs %8.3f\n",
-            i, j, k, dx*180/M_PI, rt[i].ang*180/M_PI, rt[j].ang*180/M_PI,
-            rt[i].dis, rt[j].dis);
+        //printf("i %2d, j %2d (nb %d), dx %8.3f, ang %8.3f vs %8.3f, dis %8.3f vs %8.3f\n",
+        //    i, j, k, dx*180/M_PI, rt[i].ang*180/M_PI, rt[j].ang*180/M_PI,
+        //    rt[i].dis, rt[j].dis);
         mf = 0.5 * (rt[i].ft + rt[j].ft);
       }
-      mat[i*n + i] += wt;
-      mat[i*n + j] -= wt;
-      x[i] -= mf * dx * wt;
+      mat[i*n + i] += wt / (dx * dx);
+      mat[i*n + j] -= wt / (dx * dx);
+      x[i] -= mf / dx * wt;
     }
   }
 
-  /* replace the last equation */
+  /* replace the last equation by Sum V_i = 0 */
   i = n - 1;
   for ( j = 0; j < n; j++ ) {
     mat[i * n + j] = 1;
@@ -180,7 +186,7 @@ static void solvepmf(rtpoint_t *rt, int n)
 static int savepmf(rtpoint_t *rt, int cnt, const char *fn)
 {
   FILE *fp;
-  int i;
+  int i, i0 = 0;
 
   if ( (fp = fopen(fn, "w")) == NULL ) {
     fprintf(stderr, "cannot write %s\n", fn);
@@ -192,11 +198,19 @@ static int savepmf(rtpoint_t *rt, int cnt, const char *fn)
     fprintf(fp, "%g %g %g %g %g\n",
         rt[i].dis, rt[i].ang, rt[i].pmf,
         rt[i].fr, rt[i].ft);
-    if ( i < cnt - 1 && fabs(rt[i].dis - rt[i+1].dis) > 0.05 ) {
-      fprintf(fp, "\n");
+    if ( i == cnt - 1 || fabs(rt[i].dis - rt[i+1].dis) > 0.05 ) {
+      fprintf(fp, "%g %g %g %g %g\n",
+          rt[i0].dis, rt[i0].ang + 2*M_PI, rt[i0].pmf,
+          rt[i0].fr, rt[i0].ft);
+      if ( i < cnt - 1 ) {
+        i0 = i + 1;
+        fprintf(fp, "\n");
+      }
     }
   }
   fclose(fp);
+
+  fprintf(stderr, "successfully saved PMF to %s\n", fn);
 
   return 0;
 }
