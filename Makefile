@@ -18,4 +18,4 @@ clean:
 	rstrip.py -Rlv
 
 Bossman: all
-	rsync -avz *.[ch] Makefile $(bins) /Bossman/cz1/misc/dnapair
+	rsync -avz *.[ch] Makefile mfrt.log $(bins) /Bossman/cz1/misc/dnapair

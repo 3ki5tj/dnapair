@@ -150,53 +150,6 @@ static double calctorq(double (*x)[3], float (*f)[3],
 
 
 
-/* compute the mean force */
-__inline static int calcmf(xf_t *xf, const double *m,
-    double *mf, double *var, int docorr)
-{
-  int k, ifr, nfr = xf->nfr, np = xf->np, ns = np / 2;
-  double xc[2][3], f[2], std[2];
-  corr_t *corr = NULL;
-
-  if ( docorr ) {
-    corr = corr_open(2, nfr);
-  }
-
-  /* compute the two centers of mass */
-  calccom(xf->x, m, ns, xc[0]);
-  calccom(xf->x + ns, m, ns, xc[1]);
-
-  mf[0] = 0;
-  mf[1] = 0;
-  for ( ifr = 0; ifr < nfr; ifr++ ) {
-    /* compute the mean force in frame ifr */
-    f[0] = calcrf(xf->f + ifr * np, np);
-    f[1] = calctorq(xf->x, xf->f + ifr * np, np, xc);
-    if ( docorr ) {
-      corr_add(corr, f);
-    }
-    for ( k = 0; k < 2; k++ ) {
-      mf[k] += f[k];
-      var[k] += f[k] * f[k];
-    }
-  }
-  for ( k = 0; k < 2; k++ ) {
-    mf[k] /= nfr;
-    var[k] = var[k] / nfr - mf[k] * mf[k];
-    std[k] = sqrt( var[k] );
-  }
-  printf("fr %g, %g | fa %g, %g | nfr %d\n",
-      mf[0], std[0], mf[1], std[1], nfr);
-
-  if ( docorr ) {
-    corr_save(corr, 1, 10, 1e-2, 1, "corr.dat");
-    corr_printfluc(corr, 1, NULL);
-    corr_close(corr);
-  }
-  return 0;
-}
-
-
 /* load coordinates and compute mean force in the same time
  * sums[0]: 0 counts, 1 sum, 2 square sum of the radial force
  * sums[1]: those for the angular torque

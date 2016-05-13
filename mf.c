@@ -32,6 +32,9 @@ static double rottrans(double (*x)[3], const double *mass,
 
   if ( ang != NULL ) {
     *ang = atan2(rot[1][0] - rot[0][1], rot[0][0] + rot[1][1]);
+    if ( *ang < -0.08 ) { /* make the angle positive */
+      *ang += 2 * M_PI;
+    }
   }
 
   if ( prmsd != NULL ) {
@@ -40,6 +43,7 @@ static double rottrans(double (*x)[3], const double *mass,
 
   return trans[0];
 }
+
 
 
 /* compute the mean force for the list */
@@ -72,6 +76,7 @@ static void mf_dolist(xf_t *xf, char **fns, int cnt,
         ave[1], std[1], sums[1][0]);
   }
 }
+
 
 
 /* get the file pattern of the directory
@@ -184,13 +189,11 @@ static int mfscan(param_t *par, const double *mass)
 
 
 
-
 static int do_mf(param_t *par, int argc, char **argv)
 {
   xf_t *xf;
-  double *mass = NULL, mf[2], var[2];
-  double dis, ang, rmsd;
-  int i, np = par->np;
+  double *mass = NULL;
+  int np = par->np;
 
   if ( par->usemass ) { /* use the mass as the weight */
     xnew(mass, np);
@@ -208,22 +211,11 @@ static int do_mf(param_t *par, int argc, char **argv)
     xf = xf_open(np, 500);
 
     if ( par->nargs == 0 ) {
-      /* no argument use the default input file
-       * this "if" branch for testing */
-      xf_load(xf, par->fninp, 0);
-
-      if ( xf->nfr > 0 ) {
-        /* compare the geometry of the two helices */
-        dis = rottrans(xf->x, mass, np / 2, &ang, &rmsd, 1);
-        printf("dis %g, ang %g/%g, rmsd %g\n", dis, ang, ang * 180 / M_PI, rmsd);
-
-        /* compute the mean force */
-        calcmf(xf, mass, mf, var, par->docorr);
-      }
-
+      char *fns[1] = { par->fninp };
+      mf_dolist(xf, fns, 1, mass);
     } else {
       char **fns = NULL;
-      int cnt = 0;
+      int i, cnt = 0;
 
       xnew(fns, argc);
       for ( i = 1; i < argc; i++ ) {
@@ -243,6 +235,7 @@ static int do_mf(param_t *par, int argc, char **argv)
   }
   return 0;
 }
+
 
 
 int main(int argc, char **argv)
