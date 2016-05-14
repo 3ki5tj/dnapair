@@ -1,0 +1,438 @@
+\documentclass{article}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{mathrsfs}
+\usepackage{bm}
+\usepackage[usenames,dvipsnames]{xcolor}
+\usepackage{tikz}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks,
+    linkcolor={red!30!black},
+    citecolor={blue!50!black},
+    urlcolor={blue!80!black}
+}
+
+
+\begin{document}
+
+
+
+\newcommand{\vct}[1]{\mathbf{#1}}
+\newcommand{\vx}{\vct{x}}
+\newcommand{\vy}{\vct{y}}
+\newcommand{\Z}{\mathcal{Z}}
+\newcommand{\E}{\mathcal{E}}
+\newcommand{\Ham}{\mathcal{H}}
+\newcommand{\W}{\mathcal{W}}
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\LL}{\mathcal{L}}
+\newcommand{\var}{\mathrm{var}}
+\newcommand{\com}{\mathrm{com}}
+
+\newcommand{\llbra}{[\![}
+\newcommand{\llket}{]\!]}
+
+% annotation macros
+\newcommand{\repl}[2]{{\color{gray} [#1] }{\color{blue} #2}}
+\newcommand{\add}[1]{{\color{blue} #1}}
+\newcommand{\del}[1]{{\color{gray} [#1]}}
+\newcommand{\note}[1]{{\color{OliveGreen}\small [\textbf{Comment.} #1]}}
+
+
+
+
+
+%\title{DNA mean force}
+\author{ \vspace{-10ex} }
+\date{ \vspace{-10ex} }
+
+
+%\maketitle
+
+%\abstract{
+%}
+
+%\tableofcontents
+
+
+
+\section{Mean-forces}
+
+
+\subsection{General mean-force formula}
+
+
+First, let us review a general mean-force formula.
+%
+For a quantity $X(\mathbf r)$
+as a function of molecular configuration $\mathbf r$,
+the distribution of $X$ is given by
+$$
+\rho(X)
+=
+\int \delta(X(\mathbf r) - X) \, w(\mathbf r) \, d\mathbf r,
+$$
+where the distribution
+$$
+w(\mathbf r)
+=
+\frac{ \exp[ - \beta \, U(\mathbf r) ] }
+     { Z(\beta) }
+.
+$$
+The standard mean-force formula in this case is
+$$
+\frac{ \partial \ln \rho(X) }
+     { \partial X }
+=
+\left\langle
+\nabla \cdot
+  \left(
+    \frac{ \mathbf V }
+         { \mathbf V \cdot \nabla X }
+  \right)
+  +
+  \frac{ \beta \mathbf V \cdot \mathbf F }
+       { \mathbf V \cdot \nabla X }
+\right\rangle_X
+,
+$$
+where $\langle \dots \rangle_X$
+means the average under a fixed value $X(\mathbf r) = X$,
+and $\mathbf V$ is an arbitrary field of $\mathbf r$.
+
+This formula can be generalized to a two-dimension distribution,
+for
+$$
+\rho(X_1, X_2)
+=
+\int
+\delta(X_1(\mathbf r) - X_1) \,
+\delta(X_2(\mathbf r) - X_2) \,
+w(\mathbf r) \, d\mathbf r,
+$$
+we have
+$$
+\frac{ \partial \ln \rho(X_1, X_2) }
+     { \partial X_i }
+=
+\left\langle
+\nabla \cdot
+  \left(
+    \frac{ \mathbf V_i }
+         { \mathbf V_i \cdot \nabla X_i }
+  \right)
+  +
+  \frac{ \beta \mathbf V_i \cdot \mathbf F }
+       { \mathbf V_i \cdot \nabla X_i }
+\right\rangle_{X_1, X_2}
+,
+$$
+for $i = 1, 2$, as long as we can make sure
+\begin{equation}
+\mathbf V_1 \cdot \nabla X_2
+=
+\mathbf V_2 \cdot \nabla X_1
+= 0
+.
+\label{eq:ortho}
+\end{equation}
+
+
+
+Below, we will use this formula to derive
+the mean-forces along $R$ and $\Theta$
+of a pair of DNAs.
+
+
+\subsection{Radial mean force}
+
+
+For the radial force between the $x$-separated two helices,
+we define their separation
+between the centers of mass
+$$
+R(\mathbf r) = X_+(\mathbf r) - X_-(\mathbf r)
+,
+$$
+where $+$ and $-$ are the labels of the two helices,
+and
+\begin{equation}
+X_s(\mathbf r)
+=
+\frac{ m_{s1} X_{s1} + \cdots + m_{sn} X_{sn} }
+     { M_s }
+,
+\label{eq:comx}
+\end{equation}
+where, $s = +$ or $-$,
+the total mass $M_s = m_{s1} + \cdots +m_{sn}$,
+and $n$ is the number of atoms on each helix.
+
+The gradient $\nabla X$ is
+$$
+\nabla R_{si}
+=
+\left( \frac{ \partial R } { \partial \mathbf r_{si} } \right)
+=
+\left(
+  s \, \frac{ m_{si} } { M_s } , 0, 0
+\right)
+,
+$$
+for the $i$th atom of helix $s$.
+%
+A convenient vector field is
+\begin{equation}
+  \left( \mathbf V_R \right)_{si}
+  =
+  (s \, M_s, 0, 0)
+  ,
+\end{equation}
+such that
+$\mathbf V_R \cdot \nabla R = \sum_{s, i} m_{si} \, s^2 = M_+ + M_- = 2 \, M_s$,
+and
+$$
+  \left( \frac{ \mathbf V_R } { \mathbf V_R \cdot \nabla R } \right)_{si}
+  =
+  \left( \frac s 2, 0, 0 \right)
+  ,
+  \qquad
+  \nabla \cdot
+  \left( \frac{ \mathbf V_R } { \mathbf V_R \cdot \nabla R } \right)_{si}
+  = 0.
+$$
+Besides,
+$$
+  \frac{ \mathbf V_R } { \mathbf V_R \cdot \nabla R } \cdot \mathbf F
+  =
+  \sum_{s, i} F_{six} \frac{ s } { 2 }
+  .
+$$
+So we get
+$$
+\frac{ \partial \ln \rho(R, \Theta) }
+     { \partial R }
+=
+\frac \beta 2
+\left\langle
+  \sum_{i = 1}^n F_{+ix}
+  -
+  \sum_{i = 1}^n F_{-ix}
+\right\rangle_{R, \Theta}
+.
+$$
+
+
+\subsection{Angular mean force}
+
+Next, consider the angular mean force.
+$$
+\Theta(\mathbf r) = \Theta_+(\mathbf r) - \Theta_-(\mathbf r)
+,
+$$
+where
+$$
+\Theta_s(\mathbf r)
+=
+\frac{ I_{s1} \theta_{s1} + \cdots + I_{sn} \theta_{sn} }
+     { I_s }
+,
+$$
+and
+$$
+\begin{aligned}
+I_{si}
+&=
+m_{si}
+\left[
+  (x_{si} - X_s)^2
+  +
+  (y_{si} - Y_s)^2
+\right],
+\\
+I_s
+&= \sum_{i = 1}^n I_{si},
+\\
+\theta_{si}
+&=
+\tan^{-1}
+\frac{ y_{si} - Y_s }
+     { x_{si} - X_s }
+,
+\end{aligned}
+$$
+with the $y$ coordinate of the center of mass, $Y_s$,
+defined similarly as by Eq. \eqref{eq:comx}.
+%
+Below, in deriving the mean force,
+we shall, however, treat $X_s$ and $Y_s$
+as fixed.
+
+Now since
+$$
+\nabla \theta_{si}
+=
+\frac{
+  \bigl(
+   -(y_{si} - Y_s),
+   x_{si} - X_s,
+   0
+  \bigr)
+}
+{ (x_{si} - X_s)^2 + (y_{si} - Y_s)^2 }
+,
+$$
+the gradient is
+$$
+\left( \nabla \Theta \right)_{si}
+=
+\frac{ s \, m_{si} }
+{ I_s }
+  \bigl(
+   -(y_{si} - Y_s),
+   x_{si} - X_s,
+   0
+  \bigr)
+,
+$$
+and we choose the conjugate field as
+\begin{equation}
+\left( \mathbf V_\Theta \right)_{si}
+=
+s \, I_s \,
+  \bigl(
+   -(y_{si} - Y_s),
+   x_{si} - X_s,
+   0
+  \bigr)
+.
+\end{equation}
+In this way,
+the orthogonality Eq. \eqref{eq:ortho}
+is satisfied.
+
+So $\mathbf V_\Theta \cdot \nabla \Theta = I_+ + I_- = 2 \, I_s$,
+and
+$$
+  \left( \frac{ \mathbf V_\Theta } { \mathbf V_\Theta \cdot \nabla \Theta } \right)_{si}
+  =
+  \frac s 2
+  \bigl(
+   -(y_{si} - Y_s),
+   x_{si} - X_s,
+   0
+  \bigr)
+  ,
+$$
+leading to
+$$
+  \nabla \cdot
+  \left( \frac{ \mathbf V_\Theta } { \mathbf V_\Theta \cdot \nabla \Theta } \right)_{si}
+  = 0.
+$$
+Besides,
+$$
+  \frac{ \mathbf V_\Theta }
+  { \mathbf V_\Theta \cdot \nabla \Theta } \cdot \mathbf F
+  =
+  \sum_{s, i} \tau_{siz} \frac{ s } { 2 }
+  ,
+$$
+where the torque $\tau_{siz}$ defined as
+$$
+\tau_{siz}
+=
+(x_{si} - X_s) F_{siy}
+-
+(y_{si} - Y_s) F_{six}
+.
+$$
+So we get
+$$
+\frac{ \partial \ln \rho(R, \Theta) }
+     { \partial \Theta }
+=
+\frac \beta 2
+\left\langle
+  \sum_{i = 1}^n \tau_{+iz}
+  -
+  \sum_{i = 1}^n \tau_{-iz}
+\right\rangle_{R, \Theta}
+.
+$$
+
+
+
+\section{Determining the two-dimensional PMF from the mean forces}
+
+
+To determine the mean force $\phi_i$ on a few grid points $i$,
+we will minimize the functional
+$$
+E
+=
+\frac 1 2
+\sum_{(i, j)}
+\frac{ 1
+}
+{
+  \mathrm{Var} (f_i) + \mathrm{Var} (f_j)
+}
+  \left(
+  \frac {\phi_i - \phi_j} { \Delta x_{ij} }
+  +
+  \frac{ f_i + f_j } { 2 }
+  \right)^2
+,
+$$
+where
+$\Delta x_{ij}$ is the difference in $R$
+in a distance-separated pair
+or the difference in $\Theta$
+in an angle-separated pair,
+$f_i$ and $f_i$ means the mean force
+along $R$ for a distance-separated pair
+or the mean force along $\Theta$
+for an angle separated pair,
+and
+$\mathrm{Var}(f_i)$
+is the variance of $f_i$.
+
+Thus, to minimize the function, we have
+\begin{equation}
+0
+=
+\frac{ \partial E } { \partial \phi_i }
+=
+\sum_{j \mathrm{\; n.n. \; to\; } i }
+\frac{
+  1
+}
+{
+  \mathrm{Var} (f_i) + \mathrm{Var} (f_j)
+}
+\left(
+  \frac {\phi_i - \phi_j} { \Delta x_{ij}^2 }
+  +
+  \frac{ f_i + f_j } { 2 \, \Delta x_{ij} }
+\right)
+,
+\label{eq:phieqs}
+\end{equation}
+where the sum is carried over neighbors of $i$.
+These equations are not independent, however.
+%
+So we need to supply an additional equation,
+such as $\phi_i = 0$ or $\sum_i \phi_i = 0$.
+%
+By solving Eq. \eqref{eq:phieqs} and this additional equation,
+we get the PMF $\var_i$.
+
+%\bibliographystyle{plain}
+%\bibliography{simul}
+
+\end{document}
