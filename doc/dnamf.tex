@@ -393,7 +393,7 @@ $$
 where
 $(i, j)$ denotes a nearest neighbor pair,
 $w_{ij}$ is the inverse of the square error of mean-force integral
-of pair
+of the pair
 \begin{align*}
   w_{ij}^{-1}
 &=
@@ -447,7 +447,7 @@ which leads to
 ,
 \label{eq:phieqs}
 \end{equation}
-where the sum is carried over nearest neighbors of $i$.
+where the sum is carried over the nearest neighbors of $i$.
 
 However, these equations are not independent:
 if we sum over $i$, we get $0$ on both sides.
@@ -490,8 +490,16 @@ where
   w_{ik} \frac{ \Delta \Theta_{ik} } { 2 }
   .
 \end{align*}
+If $j$ is neither a nearest neighbor of $i$, or $i$ itself,
+the matrix elements are zeros in the above.
+%
 The last rows of $\mathbf W$, $\mathbf A$ and $\mathbf B$
-should be modified according to the above discussion.
+should be modified to
+$(1, \dots, 1)$, $(0, \dots, 0)$, and $0, \dots, 0)$,
+respectively,
+according to the above discussion.
+
+
 
 
 Then, the solution is

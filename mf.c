@@ -7,6 +7,32 @@
 
 
 
+static double aveang(double (*x)[3], double (*y)[3],
+    const double *mass, int ns,
+    double xc[3], double yc[3], double angref)
+{
+  double angx, angy, dang, wt, suma = 0, wtot = 0;
+  int i;
+
+  for ( i = 0; i < ns; i++ ) {
+    double x0 = x[i][0] - xc[0];
+    double x1 = x[i][1] - xc[1];
+    double y0 = y[i][0] - yc[0];
+    double y1 = y[i][1] - yc[1];
+    angx = atan2(x1, x0);
+    angy = atan2(y1, y0);
+    dang = angy - angx;
+    //printf("i %d, ang %g, %g\n", i, dang, angref); getchar();
+    dang = fmod(dang - angref + 5 * M_PI, 2 * M_PI) - M_PI;
+    wt = x0 * x0 + x1 * x1 + y0 * y0 + y1 * y1;
+    if ( mass != NULL ) wt *= mass[i];
+    suma += wt * dang;
+    wtot += wt;
+  }
+
+  return angref + suma / wtot;
+}
+
 /* rotate and translate the first helix to the second */
 static double rottrans(double (*x)[3], const double *mass,
     int ns, double *ang, double *prmsd, int verbose)
@@ -31,12 +57,17 @@ static double rottrans(double (*x)[3], const double *mass,
   }
 
   if ( ang != NULL ) {
+    double dang, angref;
     /* NOTE: the angle formula here is approximate
      * for a flexible DNA molecule */
-    *ang = atan2(rot[1][0] - rot[0][1], rot[0][0] + rot[1][1]);
-    if ( *ang < -0.08 ) { /* make the angle positive */
-      *ang += 2 * M_PI;
+    angref = atan2(rot[1][0] - rot[0][1], rot[0][0] + rot[1][1]);
+    dang = aveang(x, x + ns, mass, ns, xc[0], xc[1], angref);
+    fprintf(stderr, "angle modified from %g(%g) to %g(%g)\n",
+        angref, angref * 180 / M_PI, dang, dang * 180 / M_PI);
+    if ( dang < -0.08 ) { /* make the angle positive */
+      dang += 2 * M_PI;
     }
+    *ang = dang;
   }
 
   if ( prmsd != NULL ) {
