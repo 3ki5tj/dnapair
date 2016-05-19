@@ -1,10 +1,13 @@
 #include "util.h"
 #include "lu.h"
+#include "mtrand.h"
+
 
 
 char *fninp = "mfrt.log";
 char *fnout = "mfrt.out";
 double angsp = M_PI / 3;
+int nerr = 100; /* number of runs to compute error */
 
 
 typedef struct {
@@ -12,9 +15,9 @@ typedef struct {
   double fr, ft;
   double varfr, varft;
   double pmf;
+  double pmferr;
   int nbcnt;
   int nb[4];
-  int nbtype[4];
 } rtpoint_t;
 
 
@@ -103,25 +106,21 @@ static void findnb(rtpoint_t *rt, int cnt)
     j1 = locate(rt, cnt, dis - 0.5, ang);
     if ( j1 >= 0 ) {
       rt[i].nb[ rt[i].nbcnt ] = j1;
-      rt[i].nbtype[ rt[i].nbcnt ] = 0;
       rt[i].nbcnt += 1;
     }
     j2 = locate(rt, cnt, dis + 0.5, ang);
     if ( j2 >= 0 ) {
       rt[i].nb[ rt[i].nbcnt ] = j2;
-      rt[i].nbtype[ rt[i].nbcnt ] = 0;
       rt[i].nbcnt += 1;
     }
     j3 = locate(rt, cnt, dis, ang - angsp);
     if ( j3 >= 0 ) {
       rt[i].nb[ rt[i].nbcnt ] = j3;
-      rt[i].nbtype[ rt[i].nbcnt ] = 1;
       rt[i].nbcnt += 1;
     }
     j4 = locate(rt, cnt, dis, ang + angsp);
     if ( j4 >= 0 ) {
       rt[i].nb[ rt[i].nbcnt ] = j4;
-      rt[i].nbtype[ rt[i].nbcnt ] = 1;
       rt[i].nbcnt += 1;
     }
     //printf("point %d %g, %g has %d neighbors, %d, %d, %d, %d\n",
@@ -136,7 +135,7 @@ static void findnb(rtpoint_t *rt, int cnt)
 static void solvepmf(rtpoint_t *rt, int n)
 {
   int i, j, k;
-  double *mat, *x, wt, dx, mf;
+  double *mat, *x, wt, dx, dy, mf;
 
 
   xnew(mat, n * n);
@@ -148,21 +147,15 @@ static void solvepmf(rtpoint_t *rt, int n)
   for ( i = 0; i < n; i++ ) {
     for ( k = 0; k < rt[i].nbcnt; k++ ) {
       j = rt[i].nb[k];
-      if ( rt[i].nbtype[k] == 0 ) {
-        wt = 1.0 / (rt[i].varfr + rt[j].varfr);
-        dx = rt[i].dis - rt[j].dis;
-        mf = 0.5 * (rt[i].fr + rt[j].fr);
-      } else {
-        wt = 1.0 / (rt[i].varft + rt[j].varft);
-        dx = fmod(rt[i].ang - rt[j].ang + 5 * M_PI, 2 * M_PI) - M_PI;
-        //printf("i %2d, j %2d (nb %d), dx %8.3f, ang %8.3f vs %8.3f, dis %8.3f vs %8.3f\n",
-        //    i, j, k, dx*180/M_PI, rt[i].ang*180/M_PI, rt[j].ang*180/M_PI,
-        //    rt[i].dis, rt[j].dis);
-        mf = 0.5 * (rt[i].ft + rt[j].ft);
-      }
-      mat[i*n + i] += wt / (dx * dx);
-      mat[i*n + j] -= wt / (dx * dx);
-      x[i] -= mf / dx * wt;
+      dx = rt[i].dis - rt[j].dis;
+      dy = fmod(rt[i].ang - rt[j].ang + 5 * M_PI, 2 * M_PI) - M_PI;
+      wt = 1 / ( (rt[i].varfr + rt[j].varfr) * dx * dx
+               + (rt[i].varft + rt[j].varft) * dy * dy );
+      mf = 0.5 * (rt[i].fr + rt[j].fr) * dx
+         + 0.5 * (rt[i].ft + rt[j].ft) * dy;
+      mat[i*n + i] += wt;
+      mat[i*n + j] -= wt;
+      x[i] -= mf * wt;
     }
   }
 
@@ -193,14 +186,15 @@ static int savepmf(rtpoint_t *rt, int cnt, const char *fn)
     return -1;
   }
 
-  fprintf(fp, "# %d\n", cnt);
+  fprintf(fp, "# %d %d\n", cnt, nerr);
   for ( i = 0; i < cnt; i++ ) {
-    fprintf(fp, "%g %g %g %g %g\n",
-        rt[i].dis, rt[i].ang, rt[i].pmf,
+    fprintf(fp, "%g %g %g %g %g %g\n",
+        rt[i].dis, rt[i].ang, rt[i].pmf, rt[i].pmferr,
         rt[i].fr, rt[i].ft);
     if ( i == cnt - 1 || fabs(rt[i].dis - rt[i+1].dis) > 0.05 ) {
-      fprintf(fp, "%g %g %g %g %g\n",
-          rt[i0].dis, rt[i0].ang + 2*M_PI, rt[i0].pmf,
+      fprintf(fp, "%g %g %g %g %g %g\n",
+          rt[i0].dis, rt[i0].ang + 2*M_PI,
+          rt[i0].pmf, rt[i0].pmferr,
           rt[i0].fr, rt[i0].ft);
       if ( i < cnt - 1 ) {
         i0 = i + 1;
@@ -217,24 +211,67 @@ static int savepmf(rtpoint_t *rt, int cnt, const char *fn)
 
 
 
-static void fitpmf(void)
+/* compute the mean force */
+static rtpoint_t *fitpmf(int *cnt)
 {
   rtpoint_t *rtarr;
-  int cnt;
 
-  rtarr = loaddata(fninp, &cnt);
-  findnb(rtarr, cnt);
+  rtarr = loaddata(fninp, cnt);
+  findnb(rtarr, *cnt);
+  solvepmf(rtarr, *cnt);
+  return rtarr;
+}
+
+
+/* vary the mean forces and recompute the pmf */
+static rtpoint_t *varpmf(rtpoint_t *rtarr0, int cnt)
+{
+  rtpoint_t *rtarr;
+  int i;
+
+  xnew(rtarr, cnt);
+  for ( i = 0; i < cnt; i++ ) {
+    memcpy(rtarr + i, rtarr0 + i, sizeof(rtarr[0]));
+    rtarr[i].fr += randgaus() * sqrt( rtarr[i].varfr );
+    rtarr[i].ft += randgaus() * sqrt( rtarr[i].varft );
+  }
   solvepmf(rtarr, cnt);
-  savepmf(rtarr, cnt, fnout);
+  return rtarr;
 }
 
 
 int main(int argc, char **argv)
 {
+  rtpoint_t *rtarr, *rtarr0;
+  double *x2, x;
+  int cnt, i, k;
+
   if ( argc > 1 ) {
     fninp = argv[1];
   }
 
-  fitpmf();
+  if ( argc > 2 ) {
+    nerr = atoi( argv[2] );
+  }
+
+  rtarr0 = fitpmf(&cnt);
+
+  if ( nerr > 0 ) {
+    xnew(x2, cnt);
+    for ( k = 0; k < nerr; k++ ) {
+      rtarr = varpmf(rtarr0, cnt);
+      for ( i = 0; i < cnt; i++ ) {
+        x = rtarr[i].pmf - rtarr0[i].pmf;
+        x2[i] += x * x;
+      }
+      free(rtarr);
+    }
+    for ( i = 0; i < cnt; i++ ) {
+      x2[i] /= k;
+      rtarr0[i].pmferr = sqrt( x2[i] );
+    }
+    free(x2);
+  }
+  savepmf(rtarr0, cnt, fnout);
   return 0;
 }

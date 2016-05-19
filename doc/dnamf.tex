@@ -377,30 +377,36 @@ E
 =
 \frac 1 2
 \sum_{(i, j)}
-\frac{ 1
+\frac{
+  \left\{
+  \phi_i - \phi_j
+  +
+  \frac 1 2
+  \left[
+    (f_{Ri} + f_{Rj}) \Delta R_{ij}
+       + (f_{\Theta i} + f_{\Theta j}) \Delta \Theta_{ij}
+  \right]
+  \right\}^2
 }
 {
-  \mathrm{Var} (f_i) + \mathrm{Var} (f_j)
-}
-  \left(
-  \frac {\phi_i - \phi_j} { \Delta x_{ij} }
+  [\var (f_{Ri}) + \var (f_{Rj}) ] \, \Delta R_{ij}^2
   +
-  \frac{ f_i + f_j } { 2 }
-  \right)^2
+  [\var (f_{\Theta i}) + \var (f_{\Theta j}) ] \, \Delta \Theta_{ij}^2
+}
 ,
 $$
 where
-$\Delta x_{ij}$ is the difference in $R$
-in a distance-separated pair
-or the difference in $\Theta$
-in an angle-separated pair,
-$f_i$ and $f_i$ means the mean force
-along $R$ for a distance-separated pair
-or the mean force along $\Theta$
-for an angle separated pair,
-and
-$\mathrm{Var}(f_i)$
-is the variance of $f_i$.
+%$\Delta x_{ij}$ is the difference in $R$
+%in a distance-separated pair
+%or the difference in $\Theta$
+%in an angle-separated pair,
+%$f_i$ and $f_i$ means the mean force
+%along $R$ for a distance-separated pair
+%or the mean force along $\Theta$
+%for an angle separated pair,
+%and
+$\var (f)$
+is the variance of $f$.
 
 Thus, to minimize the function, we have
 \begin{equation}
@@ -408,29 +414,32 @@ Thus, to minimize the function, we have
 =
 \frac{ \partial E } { \partial \phi_i }
 =
-\sum_{j \mathrm{\; n.n. \; to\; } i }
+\sum_{j \mathrm{\; n.n. \; } i }
 \frac{
-  1
+  \phi_i - \phi_j
+  +
+  \frac 1 2
+  \left[
+    (f_{Ri} + f_{Rj}) \Delta R_{ij}
+       + (f_{\Theta i} + f_{\Theta j}) \Delta \Theta_{ij}
+  \right]
 }
 {
-  \mathrm{Var} (f_i) + \mathrm{Var} (f_j)
-}
-\left(
-  \frac {\phi_i - \phi_j} { \Delta x_{ij}^2 }
+  [\var (f_{Ri}) + \var (f_{Rj}) ] \, \Delta R_{ij}^2
   +
-  \frac{ f_i + f_j } { 2 \, \Delta x_{ij} }
-\right)
+  [\var (f_{\Theta i}) + \var (f_{\Theta j}) ] \, \Delta \Theta_{ij}^2
+}
 ,
 \label{eq:phieqs}
 \end{equation}
-where the sum is carried over neighbors of $i$.
+where the sum is carried over nearest neighbors of $i$.
 These equations are not independent, however.
 %
 So we need to supply an additional equation,
 such as $\phi_i = 0$ or $\sum_i \phi_i = 0$.
 %
 By solving Eq. \eqref{eq:phieqs} and this additional equation,
-we get the PMF $\var_i$.
+we get the PMF, $\phi_i$.
 
 %\bibliographystyle{plain}
 %\bibliography{simul}

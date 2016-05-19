@@ -31,6 +31,8 @@ static double rottrans(double (*x)[3], const double *mass,
   }
 
   if ( ang != NULL ) {
+    /* NOTE: the angle formula here is approximate
+     * for a flexible DNA molecule */
     *ang = atan2(rot[1][0] - rot[0][1], rot[0][0] + rot[1][1]);
     if ( *ang < -0.08 ) { /* make the angle positive */
       *ang += 2 * M_PI;
