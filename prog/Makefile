@@ -20,7 +20,7 @@ clean:
 zip: dnapairprog.zip
 
 dnapairprog.zip::
-	zip $@ *.[ch] Makefile mfrt.log mfrt.out doc/*.tex doc/*.pdf
+	zip $@ *.[ch] Makefile mfrt.log mfrt.out ../doc/*.tex ../doc/*.pdf
 
 Bossman: all
 	rsync -avz *.[ch] Makefile mfrt.log $(bins) /Bossman/cz1/misc/dnapair
