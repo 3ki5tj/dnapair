@@ -1,0 +1,150 @@
+*
+
+!read topology
+read rtf card name ~/c37a2_195/toppar/top_all36_prot.rtf
+
+!read parameters
+read param card flex name ~/c37a2_195/toppar/par_all36_prot.prm
+
+stream ~/c37a2_195/toppar/stream/toppar_all36_prot_model.str
+stream ./toppar_water_ions.str
+
+!read sequ ACET 400
+!generate ACET setup !first GLYP last CTER
+!
+!read sequ MG 200
+!generate MGH setup 
+!
+!read sequ TPMG 1200
+!generate TPMG setup noangle nodihedral
+!
+!read sequ TIP3 4741
+!generate SOL setup noangle nodihedral
+!
+!write psf card XPLO name conf.psf
+!write coor card name conf0.crd
+!
+!stop
+
+read psf card xplo name conf.psf
+read coor card name conf0.crd
+
+!coor trans xdir -25 ydir -25 zdir -38.0 sele all end
+!
+!write coor card name conf0.crd
+!
+!stop
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! TETRagonal !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+crystal define TETR  50.000   50.000   78.661 90.0 90.0 90.0
+crystal build cutoff 15.0 noperations 0
+!imag byseg sele resname GUA .or. resname CYT end
+imag byres sele all end
+
+update atom ewald pmewald kappa 0.33 - 
+       fftx 48 ffty 48 fftz 64 spline ORDER 6 -
+    INBFRQ -1 atom vatom cutnb 14.0 ctofnb 12. cdie eps 1. -
+    ctonnb 8. vswitch cutim 14.0 imgfrq -1 
+
+shake bonh param 
+!cons fix sele .not. resname TIP3 end
+
+!mini sd nstep 1000
+
+mmfp
+geo plane xref 0 yref 0 zref 0.0 zdir 1.0 -
+    harmonic force 9.560229445506692160611 droff 25.0 inside sele type C* .or. type MG end
+end
+
+energy atom ewald pmewald kappa 0.33 -
+   fftx 48 ffty 48 fftz 64 spline ORDER 6 -
+   INBFRQ -1 atom vatom cutnb 14.0 ctofnb 12. cdie eps 1. -
+   ctonnb 8. vswitch cutim 14.0 imgfrq -1 -
+   !DOMD NDIR @DDX @DDY @DDZ
+
+!shake fast bonh tol 1.0e-8 para
+
+calc j = @i-1
+
+open read  card unit 50 name traj@j.rst
+open write card unit 51 name traj@i.rst
+open write file unit 52 name traj@i.dcd
+
+set word restart
+!if i eq 1 set word start
+!if i eq 1 set rst -1
+
+! dynamics run
+dyna cpt @word -    ! constant temperature and pressure (cpt), use restart file (restrt)
+    nstep 5000000 timestep 0.002 -   ! go 500000 time steps with a time step size of 0.002 ps
+    IUNREA 50    -  ! read restart file
+    IUNWRI 51 ISVFRQ 2000  -  ! write restart file
+    IUNCRD 52 NSAVC 1000  -  ! write dcd file
+    kunit -1 -                      ! unit on which total energy and some of its components along with temperature during the run are written using formatted output
+    echeck 9999. -   ! max amount of energy the system can change in one time step
+    pcons -          ! constant pressure
+    pint -           ! internal pressure will be coupled with reference pressure
+    pmxx 0.0 pmyy 0.0 pmzz 225.0 -
+    pref 1.0 -       ! reference pressure in atmospheres
+    pgamma 0.0 -     ! Langevin piston collision frequency (1/ps)
+    hoover reft 298.00 -            ! Hoover reference temperature in K
+    tmass 20000. -   ! mass of the thermal piston (kcal*mol^(-1)*ps^2)
+    ntrfrq 2500 -    ! step frequency for stopping the rotation and translation of the molecule during dynamics
+    nbond inbfrq -1 atom vatom cutnb 14.0 ctofnb 12. cdie eps 1. - ! inbfrq is frequency of regenerating the nonbodned list
+    vfswitch ctonnb 8. cutim 14.0 imgfrq -1 wmin 1.0 - ! imgfrq is frequency of update of images
+    ewald pmew fftx 48 ffty 48 fftz 64  kappa .34 spline order 6 - ! ewald parameters
+    iprfrq 2500 -     ! step frequency for calculating averages and rms fluctuations of the major energy values; must be < ntrfrq
+    ihtfrq 0 -        ! step frequency for heating the molecule in increments teminc degrees in the heating portion of a run (no heating if zero)
+    ieqfrq 0 -        ! step frequency for assigning or scaling velocities to finalt temperature during equilibration stage of run
+    nprint 1000 -      ! step frequency for storing on kunit as well as printing on unit 6 (energy data of the run)
+    nsavc 1000 -      ! step frequency for writing coordinates
+    nsavv 0 -         ! step frequency for writing velocities
+    ihbfrq 0 -        ! step frequency for regenerating hydrogen bond list
+    ilbfrq 0 -        ! step frequency for checking whether an atom is in the Langevin region defined by RBUF
+    firstt 298.00 -   ! initial temperature to which the velocities are assigned
+    finalt 298.00 -   ! final equilibrium temperature
+    teminc 0.0 -      ! temperature increment to be given every ihtfrq steps
+    tstruct 298.00 -  ! temperature at which starting structure has been equilibrated
+    tbath 298.00 -    ! temperature of the heat bath in Langevin dynamics
+    iasors 1 -        ! option for scaling or assigning of velocities during heating (every ihtfrq steps) or equilibration (every ieqfrq steps)
+    iasvel 1 -        ! option for choice of method for assignment of velocities during heating and equilibration when iasors is non-zero
+    iseed 337046 -    ! random seeding # of velocities
+    iscvel 0 -        ! option for scaling velocities
+    ichecw 0 -        ! option for checking to see if average temperature of the system lies in the alotted temperature window every ieqfrq steps
+    twindh 5.0 -      ! allowed temperature deviation from final temperature on high side
+    twindl -5.0 -     ! allowed temperature deviation from final temperature on low side
+
+!DYNAMICS CPT LEAP @word NSTEP 300000 TIMESTEP 0.002 ISEED 343244 -
+!    INBFRQ -1 IHBFRQ -1 -   ! heuristic
+!    IMGFRQ 50 -   ! 50 is recommended if CUTIM = CUTNB + 2A.
+!    IXTFRQ 1000  -   ! IXTFRQ=1000 only w/ CPT
+!    IUNREA 50    -  ! read restart file
+!    IUNWRI 51 ISVFRQ 2000  -  ! write restart file
+!    IUNCRD 52 NSAVC 1000  -  ! write dcd file
+!    IUNVEL -1 NSAVV 2000  -  ! write velocity.
+!    IUNXYZ -1 NSAVX 2000  -  ! write crd, vel, force
+!    IPRFRQ 2000  - ! aver, fluq etc. (> NTRFRQ)
+!    NTRFRQ 500  -  ! needed in Ewald
+!    NPRINT 2000  -  ! write energy to stdout
+!    hoover tmass 1000.0 reft 298.00 -
+!    pconstant pmxx 500.0 pmyy 500.0 pmzz 500.0 pref 1.0 -
+!    TSTRUC -999.0 - ! initial vel. assignment. (1.25*FIRSTT)
+!    FIRSTT  298.00 FINALT 298.00 TEMINC 10.0 -
+!    IASVEL 1 - ! Assign vel. 0:? 1: Gaussian -1: uniform
+!    IHTFRQ 500 IEQFRQ 500 -
+
+write coor card name confout@i.crd
+
+write coor pdb name confout@i.pdb
+
+!dyna cpt rest nstep 2000000000 timestep 0.002 -
+!    pcons pint pref 1.0 pmass 2000. surf tens 17. pgamma 10. -
+!    hoover reft 298.00 tmass 20000. tbath 298.00 -
+!    inbfrq -1 imgfrq -1 wmin 1.0 -
+!    iprfrq 5000 ihtfrq 0 ieqfrq 0 ntrfrq 5000 -
+!    iuncrd 31 iunrea 51 iunwri 41 kunit -1 -
+!    nprint 100 nsavc 1000 nsavv 0 ihbfrq 0 ilbfrq 0 -
+!    firstt 298.00 finalt 298.00 teminc 10.0 tstruct 298.00 -
+!    iasors 1 iasvel 1 iscvel 0 ichecw 0 twindh 5.0 twindl -5.0
+
