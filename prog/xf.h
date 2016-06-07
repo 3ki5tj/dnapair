@@ -1,3 +1,6 @@
+#ifndef XF_H__
+#define XF_H__
+
 
 const int xf_nfrx = 1; /* number of x frames to load */
 
@@ -130,4 +133,4 @@ static int xf_load(xf_t *xf, const char *fn,
 }
 
 
-
+#endif /* XF_H__ */

@@ -122,15 +122,20 @@ static double calcrf(float (*f)[3], int np)
 }
 
 
-/* compute the torque of a single frame */
+/* compute the torque of a single frame
+ * the default (return value) contains the total torque
+ * on the second DNA molecule
+ * for reference, we also compute the averaged torque, *symmtorq
+ * on the two DNA molecules */
 static double calctorq(double (*x)[3], float (*f)[3],
-    int np, double xc[2][3])
+    int np, double xc[2][3], double *symmtorq)
 {
   int i, sig, sgn, ns = np / 2;
-  double dx[3], torq;
+  double dx[3], t, torq;
 
   /* compute the mean force in frame ifr */
   torq = 0;
+  *symmtorq = 0;
   for ( i = 0; i < np; i++ ) {
     if ( i < ns ) {
       /* flip the sign of the weight for the first half */
@@ -142,26 +147,33 @@ static double calctorq(double (*x)[3], float (*f)[3],
     }
     dx[0] = x[i][0] - xc[sig][0];
     dx[1] = x[i][1] - xc[sig][1];
-    torq += sgn * (-dx[1] * f[i][0] + dx[0] * f[i][1]);
+    t =  sgn * (-dx[1] * f[i][0] + dx[0] * f[i][1]);
+    torq += t;
+    if ( sig ) {
+      *symmtorq += t;
+    }
   }
-  torq /= 2;
+  *symmtorq /= 2;
   return torq;
 }
 
 
 
+#include "xf.h"
+
+#define MFCNT 3
 /* load coordinates and compute mean force in the same time
  * sums[0]: 0 counts, 1 sum, 2 square sum of the radial force
  * sums[1]: those for the angular torque
  * */
 __inline static int calcmf_inplace(xf_t *xf, const char *fn,
-    const double *mass, double sums[2][3])
+    const double *mass, double sums[MFCNT][3])
 {
   FILE *fp;
   char s[256];
   int i, np = xf->np, ns = np / 2;
   clock_t starttime = clock();
-  double nfr0 = sums[0][0], f[2], xc[2][3];
+  double nfr0 = sums[0][0], f[MFCNT], xc[2][3];
   int k, once = 0;
 
   if ( (fp = fopen(fn, "r")) == NULL ) {
@@ -208,9 +220,9 @@ __inline static int calcmf_inplace(xf_t *xf, const char *fn,
 
     /* compute the force and torque */
     f[0] = calcrf(xf->f, np);
-    f[1] = calctorq(xf->x, xf->f, np, xc);
+    f[1] = calctorq(xf->x, xf->f, np, xc, &f[2]);
 
-    for ( k = 0; k < 2; k++ ) {
+    for ( k = 0; k < MFCNT; k++ ) {
       sums[k][0] += 1;
       sums[k][1] += f[k];
       sums[k][2] += f[k] * f[k];

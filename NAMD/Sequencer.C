@@ -248,6 +248,7 @@ void Sequencer::integrate(int scriptTask) {
     // Do we need to return forces to TCL script or Colvar module?
     int doTcl = simParams->tclForcesOn;
 	int doColvars = simParams->colvarsOn;
+    bool doDNAPair = simParams->DNAPairOn;
     ComputeGlobal *computeGlobal = Node::Object()->computeMgr->computeGlobalObject;
 
     // Bother to calculate energies?
@@ -304,7 +305,11 @@ void Sequencer::integrate(int scriptTask) {
       computeGlobal->saveTotalForces(patch);
     submitHalfstep(step);
     if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
+
+    // DNAPairForce stuff
+    //collection->submitForces(step,patch->atom,maxForceUsed,patch->f);
     submitDNAPairForceTorque(step);
+
     if ( ! commOnly ) {
       addForceToMomentum(-0.5*timestep);
       if (staleForces || doNonbonded)
@@ -425,6 +430,9 @@ void Sequencer::integrate(int scriptTask) {
 
       submitHalfstep(step);
       if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
+
+      // DNAPairForce stuff
+      //collection->submitForces(step,patch->atom,maxForceUsed,patch->f);
       submitDNAPairForceTorque(step);
 
       if ( ! commOnly ) {
@@ -774,31 +782,43 @@ void Sequencer::submitDNAPairForceTorque(int step) {
   FullAtom *a = patch->atom.begin();
   const int numAtoms = patch->numAtoms;
 
-  BigReal force = 0, torque = 0;
+  BigReal force = 0;
+  BigReal torque = 0;
   Vector del;
   ForceList *f = patch->f;
-  int ftag = Results::normal;
-  for ( int i = 0; i < numAtoms; ++i ) {
-    // TODO: compute the center of mass
+  int ftag = Results::nbond;
+
+  for ( int i = 0; i < numAtoms; i++ ) {
     int aid = a[i].id, dnaid = -1;
-    if ( aid >= simParams->DNA1Start && aid < simParams->DNA1End ) {
+    if ( aid >= simParams->DNA1Start - 1
+      && aid <= simParams->DNA1End - 1 ) {
       dnaid = 1;
-    } else if ( aid >= simParams->DNA2Start && aid < simParams->DNA2End ) {
+    } else if ( aid >= simParams->DNA2Start - 1
+             && aid <= simParams->DNA2End - 1 ) {
       dnaid = 2;
     } else {
       continue;
     }
-
+    
+    // Warning a[i].position may be null
     if ( dnaid == 1 ) {
       force -= f[ftag][i].x;
-      del = patch->lattice.delta(a[i].position, simParams->DNA1Center);
-      torque -= del.x * f[ftag][i].y - del.y * f[ftag][i].x;
+      del = a[i].position; // - simParams->DNA1Center;
+      torque -= del.x * (f[ftag][i].y) - del.y * (f[ftag][i].x);
     } else if ( dnaid == 2 ) {
       force += f[ftag][i].x;
-      del = patch->lattice.delta(a[i].position, simParams->DNA1Center);
-      torque += del.x * f[ftag][i].y - del.y * f[ftag][i].x;
+      del = a[i].position; // - simParams->DNA1Center;
+      torque += del.x * (f[ftag][i].y) - del.y * (f[ftag][i].x);
     }
+
+    //std::cout << step << ", " << dnaid << ", "
+    //    << aid << ", x: " << a[i].position
+    //    << ", f:" << f[ftag][i]
+    //    << ", del:" << del << ", torq " << torque << std::endl;
   }
+
+  //std::cout << "Sequencer, step " << step
+  //  << ", force " << force << ", torque " << torque << "\n";
 
   reduction->item(REDUCTION_DNAPAIR_FORCE) += force;
   reduction->item(REDUCTION_DNAPAIR_TORQUE) += torque;

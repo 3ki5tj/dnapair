@@ -1,10 +1,13 @@
 /* compare the coordinats from two files */
 #include "util.h"
 #include "mat.h"
+#include "mf.h"
 
 
 const char *fnin = "../test/fixed.pdb";
+const char *fnpsf = "../test/ionized.psf";
 int ns = 1899; /* number of atoms in single DNA */
+int usemass = 1;
 
 
 static vct *loadpdb(const char *fn, int np)
@@ -39,20 +42,31 @@ static vct *loadpdb(const char *fn, int np)
   return x;
 }
 
+
 int main(int argc, char **argv)
 {
   double (*x)[3], *mass = NULL;
-  double rot[3][3], trans[3];
+  double rot[3][3], trans[3], xc1[3], xc2[3];
   double rmsd;
-  int k;
+  int np = ns * 2;
 
   if ( argc >= 2 ) {
     fnin = argv[1];
   }
 
-  x = loadpdb(fnin, ns * 2);
+  x = loadpdb(fnin, np);
+
+  if ( usemass ) {
+    xnew(mass, np);
+    loadmass(fnpsf, mass, np);
+  }
+
+  calccom(x, mass, ns, xc1);
+  calccom(x + ns, mass + ns, ns, xc2);
+
   rmsd = vrmsd(x + ns, NULL, x, mass, ns, 0, rot, trans);
-  printf("RMSD is %g\n", rmsd);
+  printf("RMSD is %g, COM: %g, %g, %g; %g, %g, %g\n",
+      rmsd, xc1[0], xc1[1], xc1[2], xc2[0], xc2[1], xc2[2]);
 
   printf("trans : %10.5f %10.5f %10.5f\n\n",
       trans[0], trans[1], trans[2]);
@@ -63,5 +77,8 @@ int main(int argc, char **argv)
       rot[1][0], rot[1][1], rot[1][2],
       rot[2][0], rot[2][1], rot[2][2]);
 
+  if ( usemass ) {
+    free(mass);
+  }
   return 0;
 }

@@ -415,6 +415,15 @@ void Controller::integrate(int scriptTask) {
     receivePressure(step);
     if ( zeroMomentum && dofull && ! (step % slowFreq) )
 						correctMomentum(step);
+
+
+    //collection->enqueueForces(step);
+    BigReal force = reduction->item(REDUCTION_DNAPAIR_FORCE);
+    BigReal torque = reduction->item(REDUCTION_DNAPAIR_TORQUE);
+    printf("Controller, step %d, force %g, torque %g\n",
+        step, force, torque);
+
+
     printFepMessage(step);
     printTiMessage(step);
     printDynamicsEnergies(step);
@@ -449,6 +458,13 @@ void Controller::integrate(int scriptTask) {
 						correctMomentum(step);
 	langevinPiston2(step);
         reassignVelocities(step);
+        
+        //collection->enqueueForces(step);
+        BigReal force = reduction->item(REDUCTION_DNAPAIR_FORCE);
+        BigReal torque = reduction->item(REDUCTION_DNAPAIR_TORQUE);
+        std::cout << "Controller, step " << step
+          << ", force " << force << ", torque " << torque << "\n";
+
         printDynamicsEnergies(step);
         outputFepEnergy(step);
         outputTiEnergy(step);

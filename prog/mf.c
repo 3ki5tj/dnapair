@@ -84,7 +84,7 @@ static void mf_dolist(xf_t *xf, char **fns, int cnt,
     const double *mass)
 {
   double dis = 0, ang = 0, rmsd = 0;
-  double sums[2][3] = {{0, 0, 0}, {0, 0, 0}}, ave[2], std[2];
+  double sums[MFCNT][3] = {{0, 0, 0}}, ave[MFCNT], std[MFCNT];
   int i, j, once = 0, np = xf->np;
 
   /* load all files in the commandline argument */
@@ -93,7 +93,7 @@ static void mf_dolist(xf_t *xf, char **fns, int cnt,
     calcmf_inplace(xf, fns[i], mass, sums);
 
     /* convert the sums to averages and standard deviations */
-    for ( j = 0; j < 2; j++ ) {
+    for ( j = 0; j < MFCNT; j++ ) {
       ave[j] = sums[j][1] / sums[j][0];
       std[j] = sqrt(sums[j][2] / sums[j][0] - ave[j] * ave[j]);
     }
@@ -103,10 +103,11 @@ static void mf_dolist(xf_t *xf, char **fns, int cnt,
       dis = rottrans(xf->x, mass, np / 2, &ang, &rmsd, 0);
       once = 1;
     }
-    printf("dis %g, ang %g/%g, rmsd %g | f %g %g %g | torq %g %g %g\n",
+    printf("dis %g, ang %g/%g, rmsd %g | f %g %g %g | torq %g %g %g | symmtorq %g %g %g\n",
         dis, ang, ang * 180 / M_PI, rmsd,
         ave[0], std[0], sums[0][0],
-        ave[1], std[1], sums[1][0]);
+        ave[1], std[1], sums[1][0],
+        ave[2], std[2], sums[2][0]);
   }
 }
 
