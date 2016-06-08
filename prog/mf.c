@@ -1,12 +1,13 @@
 #include "util.h"
 #include "mat.h"
-#include "corr.h"
 #include "param.h"
 #include "xf.h"
 #include "mf.h"
 
 
 
+/* compute the average angle difference between the two DNA's
+ * wrapping to the closest angle to `angref` */
 static double aveang(double (*x)[3], double (*y)[3],
     const double *mass, int ns,
     double xc[3], double yc[3], double angref)
@@ -22,7 +23,8 @@ static double aveang(double (*x)[3], double (*y)[3],
     angx = atan2(x1, x0);
     angy = atan2(y1, y0);
     dang = angy - angx;
-    //printf("i %d, ang %g, %g\n", i, dang, angref); getchar();
+    /* compute the difference between dang and angref
+     * and wrap it to closest value to 0 */
     dang = fmod(dang - angref + 5 * M_PI, 2 * M_PI) - M_PI;
     wt = x0 * x0 + x1 * x1 + y0 * y0 + y1 * y1;
     if ( mass != NULL ) wt *= mass[i];
@@ -39,9 +41,14 @@ static double rottrans(double (*x)[3], const double *mass,
 {
   double xc[2][3], rot[3][3], trans[3], rmsd;
 
+  /* compute the center of mass of DNA 1
+   * ns is the number of atoms on DNA 1 */
   calccom(x,      mass, ns, xc[0]);
+  /* compute the center of mass of DNA 2
+   * x + ns is the starting coordinates of DNA 2 */
   calccom(x + ns, mass, ns, xc[1]);
 
+  /* compute the RMSD btween the two DNAs */
   rmsd = vrmsd(x, NULL, x + ns, mass, ns, 0, rot, trans);
 
   if ( verbose ) {
@@ -56,11 +63,12 @@ static double rottrans(double (*x)[3], const double *mass,
           rot[2][0], rot[2][1], rot[2][2]);
   }
 
+  /* compute the angular difference */
   if ( ang != NULL ) {
     double dang, angref;
-    /* NOTE: the angle formula here is approximate
-     * for a flexible DNA molecule */
+    /* estimate a rough value from the rotation matrix */
     angref = atan2(rot[1][0] - rot[0][1], rot[0][0] + rot[1][1]);
+    /* compute the exact value, wrap to the nearest value to angref */
     dang = aveang(x, x + ns, mass, ns, xc[0], xc[1], angref);
     fprintf(stderr, "angle modified from %g(%g) to %g(%g)\n",
         angref, angref * 180 / M_PI, dang, dang * 180 / M_PI);
@@ -79,7 +87,7 @@ static double rottrans(double (*x)[3], const double *mass,
 
 
 
-/* compute the mean force for the list */
+/* compute the mean force and torque for the list */
 static void mf_dolist(xf_t *xf, char **fns, int cnt,
     const double *mass)
 {
@@ -99,7 +107,8 @@ static void mf_dolist(xf_t *xf, char **fns, int cnt,
     }
 
     if ( !once ) {
-      /* compare the geometry of the two helices */
+      /* for the first file in the list,
+       * compare the geometry of the two helices */
       dis = rottrans(xf->x, mass, np / 2, &ang, &rmsd, 0);
       once = 1;
     }
@@ -193,7 +202,6 @@ static char **getlist(param_t *par, int *cnt)
     if ( (fp = fopen(fn, "r")) != NULL ) {
       fclose(fp);
       fns[ (*cnt)++ ] = fn;
-      //printf("i %d, cnt %d, %s\n", i + 1, *cnt, fn);
     } else {
       continue;
     }
@@ -245,12 +253,17 @@ static int do_mf(param_t *par, int argc, char **argv)
     xf = xf_open(np, 500);
 
     if ( par->nargs == 0 ) {
-      char *fns[1] = { par->fninp };
+      /* if no argument is provided, we compute
+       * the mean force for a list a single file */
+      char *fns[1];
+      fns[0] = par->fninp;
       mf_dolist(xf, fns, 1, mass);
     } else {
       char **fns = NULL;
       int i, cnt = 0;
 
+      /* treat all command line arguments
+       * that do not start with '-' as input files */
       xnew(fns, argc);
       for ( i = 1; i < argc; i++ ) {
         if ( argv[i][0] != '-' ) { /* not an option */

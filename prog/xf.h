@@ -57,7 +57,7 @@ static void xf_close(xf_t *xf)
  * fn: file name (xxx.fout.dat)
  * nfr_max: maximal number frames to be loaded, 0 to load all
  * */
-static int xf_load(xf_t *xf, const char *fn,
+__inline static int xf_load(xf_t *xf, const char *fn,
     int nfr_max)
 {
   FILE *fp;

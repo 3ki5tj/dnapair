@@ -277,6 +277,7 @@ static rtpoint_t *fitpmf(int *cnt)
   rtpoint_t *rtarr;
 
   rtarr = loaddata(fninp, cnt);
+  if ( rtarr == NULL ) exit(1);
   findnb(rtarr, *cnt);
   solvepmf(rtarr, *cnt);
   return rtarr;

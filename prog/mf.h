@@ -1,104 +1,4 @@
-#include "corr.h"
-
-
-/* load mass from .psf file */
-static int loadmass(const char *fnpsf,
-    double *mass, int n)
-{
-  FILE *fp;
-  char s[512];
-  int i;
-
-  if ( (fp = fopen(fnpsf, "r")) == NULL ) {
-    fprintf(stderr, "cannot read %s\n", fnpsf);
-    return -1;
-  }
-
-  /* search the atom information
-   * by looking for the "!NATOM" */
-  while ( fgets(s, sizeof s, fp) ) {
-    if ( strstr(s, "!NATOM") != NULL )
-      break;
-  }
-
-  for ( i = 0; i < n; i++ ) {
-    char tok[7][128];
-
-    if ( fgets(s, sizeof s, fp) == NULL ) {
-      fprintf(stderr, "%s: corrupted in scanning atom %d\n", fnpsf, i);
-      fclose(fp);
-      return -1;
-    }
-
-    sscanf(s, "%s%s%s%s%s%s%s%lf",
-        tok[0], tok[1], tok[2], tok[3],
-        tok[4], tok[5], tok[6], &mass[i]);
-  }
-
-  fclose(fp);
-  return 0;
-}
-
-
-/* check the mass of two helices are the same */
-static int checkmass(const double *mass, int np)
-{
-  int i, ns = np/2;
-
-  for ( i = 0; i < ns; i++ ) {
-    if ( fabs(mass[i] - mass[i+ns]) > 0.001 ) {
-      fprintf(stderr, "mass %d != mass %d, %g vs. %g\n",
-          i, i + ns, mass[i], mass[i+ns]);
-      return -1;
-    }
-  }
-  fprintf(stderr, "mass is ok!\n");
-  return 0;
-}
-
-
-
-/* compute the total mass */
-__inline static double getmtot(const double *m, int n)
-{
-  int i;
-  double mtot;
-
-  if ( m == NULL ) return n;
-  mtot = 0;
-  for ( i = 0; i < n; i++ )
-    mtot += m[i];
-  return mtot;
-}
-
-
-
-/* compute the center of mass */
-static void calccom(double (*x)[3],
-    const double *m, int n, double xc[3])
-{
-  int i, j;
-  double mi, mtot = 0;
-
-  for ( j = 0; j < 3; j++ ) {
-    xc[j] = 0;
-  }
-
-  for ( i = 0; i < n; i++ ) {
-    mi = (m != NULL) ? m[i] : 1.0;
-    for ( j = 0; j < 3; j++ ) {
-      xc[j] += x[i][j] * mi;
-    }
-    mtot += mi;
-    //printf("%d: %g %g %g\n", i, x[i][0], x[i][1], x[i][2]); getchar();
-  }
-
-  for ( j = 0; j < 3; j++ ) {
-    xc[j] /= mtot;
-  }
-
-  printf("%d, mtot %g: %g %g %g\n", n, mtot, xc[0], xc[1], xc[2]);
-}
+#include "com.h"
 
 
 
@@ -130,7 +30,7 @@ static double calcrf(float (*f)[3], int np)
 static double calctorq(double (*x)[3], float (*f)[3],
     int np, double xc[2][3], double *symmtorq)
 {
-  int i, sig, sgn, ns = np / 2;
+  int i, who, sgn, ns = np / 2;
   double dx[3], t, torq;
 
   /* compute the mean force in frame ifr */
@@ -139,18 +39,18 @@ static double calctorq(double (*x)[3], float (*f)[3],
   for ( i = 0; i < np; i++ ) {
     if ( i < ns ) {
       /* flip the sign of the weight for the first half */
-      sig = 0;
+      who = 0;
       sgn = -1;
     } else {
-      sig = 1;
+      who = 1;
       sgn = 1;
     }
-    dx[0] = x[i][0] - xc[sig][0];
-    dx[1] = x[i][1] - xc[sig][1];
-    t =  sgn * (-dx[1] * f[i][0] + dx[0] * f[i][1]);
-    torq += t;
-    if ( sig ) {
-      *symmtorq += t;
+    dx[0] = x[i][0] - xc[who][0];
+    dx[1] = x[i][1] - xc[who][1];
+    t = sgn * (-dx[1] * f[i][0] + dx[0] * f[i][1]);
+    *symmtorq += t;
+    if ( who == 1 ) {
+      torq += t;
     }
   }
   *symmtorq /= 2;
@@ -158,8 +58,6 @@ static double calctorq(double (*x)[3], float (*f)[3],
 }
 
 
-
-#include "xf.h"
 
 #define MFCNT 3
 /* load coordinates and compute mean force in the same time
@@ -242,6 +140,7 @@ __inline static int calcmf_inplace(xf_t *xf, const char *fn,
   fclose(fp);
   return 0;
 }
+
 
 
 

@@ -1,7 +1,7 @@
 /* compare the coordinats from two files */
 #include "util.h"
 #include "mat.h"
-#include "mf.h"
+#include "com.h"
 
 
 const char *fnin = "../test/fixed.pdb";
@@ -59,6 +59,7 @@ int main(int argc, char **argv)
   if ( usemass ) {
     xnew(mass, np);
     loadmass(fnpsf, mass, np);
+    checkmass(mass, np);
   }
 
   calccom(x, mass, ns, xc1);
