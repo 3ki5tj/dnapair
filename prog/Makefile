@@ -14,7 +14,7 @@ $(bins): % : %.c $(deps)
 
 clean:
 	rm -rf $(bins) \
-	  a.out *~ .*.un~ */*~ */.*.un~ *.dat *.pos *.log
+	  a.out *~ .*.un~ */*~ */.*.un~ *.dat *.pos
 	rstrip.py -Rlv
 
 zip: dnapairprog.zip

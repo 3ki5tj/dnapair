@@ -5,7 +5,7 @@
 
 char *fninp = "mfrt.log";
 char *fnout = "mfrt.out";
-double angsp = M_PI / 3;
+int dosymmtorq = 0; /* try on the symmtric torque */
 
 
 typedef struct {
@@ -49,22 +49,35 @@ static rtpoint_t *loaddata(const char *fn, int *cnt)
   /* read each line */
   for ( i = 0; i < n; i++ ) {
     double ang2, rmsd, frstd, frcnt, ftstd, ftcnt;
+    double fs = 0, fsstd = 0, fscnt = 0;
+    int next;
 
     fgets(s, sizeof s, fp);
     err = sscanf(s, "dis %lf, ang %lf/%lf, rmsd %lf | "
-                    "f %lf %lf %lf | torq %lf %lf %lf",
+                    "f %lf %lf %lf | torq %lf %lf %lf |%n",
         &rt[i].dis, &rt[i].ang, &ang2, &rmsd, &rt[i].fr, &frstd, &frcnt,
-        &rt[i].ft, &ftstd, &ftcnt);
-    if ( rt[i].ang < -0.05 ) {
-      rt[i].ang += 2 * M_PI;
-    }
+        &rt[i].ft, &ftstd, &ftcnt, &next);
     if ( err != 10 ) {
       fprintf(stderr, "error reading line %d/%d, err %d\n", i, n, err);
       exit(1);
     }
+    if ( rt[i].ang < -0.05 ) {
+      rt[i].ang += 2 * M_PI;
+    }
     /* convert to error measure */
     rt[i].errfr = frstd * frstd / (frcnt - 1);
     rt[i].errft = ftstd * ftstd / (ftcnt - 1);
+
+    if ( dosymmtorq ) {
+      err = sscanf(s + next, " symmtorq %lf %lf %lf",
+        &fs, &fsstd, &fscnt);
+      if ( err != 3 ) {
+        fprintf(stderr, "error reading line %d/%d, err %d\n", i, n, err);
+        exit(1);
+      }
+      rt[i].ft = fs;
+      rt[i].errft = fsstd * fsstd / (fscnt - 1);
+    }
   }
 
   *cnt = n;
@@ -77,13 +90,13 @@ static rtpoint_t *loaddata(const char *fn, int *cnt)
 
 /* locate an entry with the appoximate value of dis and ang */
 static int locate(rtpoint_t *rt, int cnt,
-    double dis, double ang)
+    double dis, double ang, double distol, double angtol)
 {
   int i;
 
   for ( i = 0; i < cnt; i++ ) {
-    if ( fabs(rt[i].dis - dis) < 0.05
-      && fabs( fmod(rt[i].ang - ang + 5 * M_PI, 2 * M_PI) - M_PI ) < 0.01 )
+    if ( fabs(rt[i].dis - dis) < distol
+      && fabs( fmod(rt[i].ang - ang + 5 * M_PI, 2 * M_PI) - M_PI ) < angtol )
       return i;
   }
   //fprintf(stderr, "cannot match dis %g, ang %.0f\n", dis, ang*180/M_PI);
@@ -97,33 +110,61 @@ static void findnb(rtpoint_t *rt, int cnt)
 {
   int i, j1, j2, j3, j4;
   double dis, ang;
+  double dissp = 1e8, angsp = 1e8;
+  double distol = 0.10, angtol = 0.02;
 
+  /* find the distance spacing */
+  for ( i = 0; i < cnt; i++ ) {
+    int j;
+
+    dis = rt[i].dis;
+    ang = rt[i].ang;
+    for ( j = 0; j < cnt; j++ ) {
+      double disj = rt[j].dis;
+      double angj = rt[j].ang;
+      double ddis = fabs(dis - disj);
+      double dang = fabs(ang - angj);
+      while ( dang > M_PI ) dang -= 2 * M_PI;
+      dang = fabs(dang);
+      if ( ddis > 0.05 && ddis < dissp ) {
+        dissp = ddis;
+      }
+      if ( dang > M_PI / 30 && dang < angsp ) {
+        angsp = dang;
+      }
+    }
+  }
+  fprintf(stderr, "Detected radial separation %g, angular separation %g deg\n",
+      dissp, angsp * 180 / M_PI);
+
+  /* find the neighbors of each grid point */
   for ( i = 0; i < cnt; i++ ) {
     dis = rt[i].dis;
     ang = rt[i].ang;
-    j1 = locate(rt, cnt, dis - 0.5, ang);
+    j1 = locate(rt, cnt, dis - dissp, ang, distol, angtol);
     if ( j1 >= 0 ) {
       rt[i].nb[ rt[i].nbcnt ] = j1;
       rt[i].nbcnt += 1;
     }
-    j2 = locate(rt, cnt, dis + 0.5, ang);
+    j2 = locate(rt, cnt, dis + dissp, ang, distol, angtol);
     if ( j2 >= 0 ) {
       rt[i].nb[ rt[i].nbcnt ] = j2;
       rt[i].nbcnt += 1;
     }
-    j3 = locate(rt, cnt, dis, ang - angsp);
+    j3 = locate(rt, cnt, dis, ang - angsp, distol, angtol);
     if ( j3 >= 0 ) {
       rt[i].nb[ rt[i].nbcnt ] = j3;
       rt[i].nbcnt += 1;
     }
-    j4 = locate(rt, cnt, dis, ang + angsp);
+    j4 = locate(rt, cnt, dis, ang + angsp, distol, angtol);
     if ( j4 >= 0 ) {
       rt[i].nb[ rt[i].nbcnt ] = j4;
       rt[i].nbcnt += 1;
     }
-    //printf("point %d %g, %g has %d neighbors, %d, %d, %d, %d\n",
-    //    i, dis, ang*180/M_PI, rt[i].nbcnt, j1, j2, j3, j4);
-    //getchar();
+    /*
+    fprintf("point %d %g, %g has %d neighbors, %d, %d, %d, %d\n",
+            i, dis, ang*180/M_PI, rt[i].nbcnt, j1, j2, j3, j4);
+    */
   }
 }
 
@@ -286,10 +327,16 @@ static rtpoint_t *fitpmf(int *cnt)
 int main(int argc, char **argv)
 {
   rtpoint_t *rtarr;
-  int cnt;
+  int i, cnt;
 
-  if ( argc > 1 ) {
-    fninp = argv[1];
+  for ( i = 1; i < argc; i++ ) {
+    if ( argv[i][0] == '-' ) {
+      if ( strstr(argv[i], "symm") ) {
+        dosymmtorq = 1;
+      }
+    } else {
+      fninp = argv[i];
+    }
   }
 
   rtarr = fitpmf(&cnt);
