@@ -406,6 +406,15 @@ void Controller::integrate(int scriptTask) {
       slowFreq = simParams->nonbondedFrequency;
     if ( step >= numberOfSteps ) slowFreq = nbondFreq = 1;
 
+    Vector DNA1Center, DNA2Center;
+    DNA1Center = origLattice.wrap_delta( simParams->DNA1Center );
+    //DNA1Center += simParams->DNA1Center;
+    DNA2Center = origLattice.wrap_delta( simParams->DNA2Center );
+    //DNA2Center += simParams->DNA2Center;
+    broadcast->DNAPairCenter.publish(1, DNA1Center);
+    broadcast->DNAPairCenter.publish(2, DNA2Center);
+    std::cout << "Controller " << DNA1Center << " " << DNA2Center << "\n";
+
   if ( scriptTask == SCRIPT_RUN ) {
 
     reassignVelocities(step);  // only for full-step velecities

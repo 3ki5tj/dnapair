@@ -242,7 +242,7 @@ private:
     for(i=0;i<numChildren;i++)
       if (children[i]==nodeID) return 1;
     return 0;
-  }      
+  }
   int childIndex(int nodeID) const {
     int i;
     for(i=0;i<numChildren;i++)
@@ -272,11 +272,11 @@ public:
   ReductionMgr();
   ~ReductionMgr();
 
-  void buildSpanTree(const int pe, 
+  void buildSpanTree(const int pe,
                      const int max_intranode_children,
                      const int max_internode_children,
-                     int* parent, 
-                     int* num_children, 
+                     int* parent,
+                     int* num_children,
                      int** children);
 
   // client interface

@@ -228,7 +228,10 @@ void Sequencer::integrate(int scriptTask) {
         adaptTempT = simParams->langevinTemp;
     else if (simParams->rescaleFreq > 0)
         adaptTempT = simParams->rescaleTemp;
-        
+
+    Vector DNA1Center = broadcast->DNAPairCenter.get(1);
+    Vector DNA2Center = broadcast->DNAPairCenter.get(2);
+    //std::cout << "Seq. Center: " << DNA1Center << " " << DNA2Center << "\n";
 
     int &doMolly = patch->flags.doMolly;
     doMolly = simParams->mollyOn && doFullElectrostatics;
@@ -248,7 +251,6 @@ void Sequencer::integrate(int scriptTask) {
     // Do we need to return forces to TCL script or Colvar module?
     int doTcl = simParams->tclForcesOn;
 	int doColvars = simParams->colvarsOn;
-    bool doDNAPair = simParams->DNAPairOn;
     ComputeGlobal *computeGlobal = Node::Object()->computeMgr->computeGlobalObject;
 
     // Bother to calculate energies?

@@ -55,7 +55,7 @@ protected:
     void addForceToMomentum(BigReal, const int ftag = Results::normal,
 						const int useSaved = 0, const int pressure = 0);
     void addVelocityToPosition(BigReal);
-    
+
     void addRotDragToPosition(BigReal);
     void addMovDragToPosition(BigReal);
 

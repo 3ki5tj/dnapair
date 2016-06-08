@@ -167,8 +167,8 @@ protected:
     int ldbSteps;
     void rebalanceLoad(int);
       int fflush_count;
-    void cycleBarrier(int,int);	
-	
+    void cycleBarrier(int,int);
+
 	void traceBarrier(int, int);
 
 #ifdef MEASURE_NAMD_WITH_PAPI
@@ -194,7 +194,7 @@ protected:
     BigReal *pressureProfileAverage;
 
     CollectionMaster *const collection;
-    
+
     ControllerBroadcasts * broadcast;
     ofstream_namd xstFile;
     void outputExtendedSystem(int step);
@@ -255,7 +255,7 @@ protected:
    BigReal adaptTempDtMin;
    BigReal adaptTempDtMax;
    ofstream_namd adaptTempRestartFile;
-  
+
 private:
     CthThread thread;
     static void threadRun(Controller*);
