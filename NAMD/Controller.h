@@ -54,6 +54,7 @@ protected:
     friend class CheckpointMsg;
     virtual void algorithm(void);	// subclasses redefine this method
 
+    void reduceDNAPair(int step, int DNAPairFreq, FILE *fp);
     void integrate(int); // Verlet integrator
     void minimize(); // CG minimizer
       RequireReduction *min_reduction;

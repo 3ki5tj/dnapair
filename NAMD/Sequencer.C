@@ -216,6 +216,10 @@ void Sequencer::integrate(int scriptTask) {
 					maxForceMerged = Results::slow;
     if ( doFullElectrostatics ) maxForceUsed = Results::slow;
 
+    // since slowFreq is always a multiple of nonbondedFrequency
+    // we compute the DNA pair force and torque and slowFreq
+    int DNAPairFreq = slowFreq;
+
     const Bool accelMDOn = simParams->accelMDOn;
     const Bool accelMDdihe = simParams->accelMDdihe;
     const Bool accelMDdual = simParams->accelMDdual;
@@ -228,10 +232,6 @@ void Sequencer::integrate(int scriptTask) {
         adaptTempT = simParams->langevinTemp;
     else if (simParams->rescaleFreq > 0)
         adaptTempT = simParams->rescaleTemp;
-
-    Vector DNA1Center = broadcast->DNAPairCenter.get(1);
-    Vector DNA2Center = broadcast->DNAPairCenter.get(2);
-    //std::cout << "Seq. Center: " << DNA1Center << " " << DNA2Center << "\n";
 
     int &doMolly = patch->flags.doMolly;
     doMolly = simParams->mollyOn && doFullElectrostatics;
@@ -308,9 +308,7 @@ void Sequencer::integrate(int scriptTask) {
     submitHalfstep(step);
     if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
-    // DNAPairForce stuff
-    //collection->submitForces(step,patch->atom,maxForceUsed,patch->f);
-    submitDNAPairForceTorque(step);
+    submitDNAPairForceTorque(step, DNAPairFreq);
 
     if ( ! commOnly ) {
       addForceToMomentum(-0.5*timestep);
@@ -433,9 +431,7 @@ void Sequencer::integrate(int scriptTask) {
       submitHalfstep(step);
       if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
-      // DNAPairForce stuff
-      //collection->submitForces(step,patch->atom,maxForceUsed,patch->f);
-      submitDNAPairForceTorque(step);
+      submitDNAPairForceTorque(step, DNAPairFreq);
 
       if ( ! commOnly ) {
         addForceToMomentum(-0.5*timestep);
@@ -779,48 +775,55 @@ if ( simParams->zeroMomentumAlt ) {
   reduction->item(REDUCTION_MOMENTUM_MASS) += mass;
 }
 
-void Sequencer::submitDNAPairForceTorque(int step) {
+void Sequencer::submitDNAPairForceTorque(int step, int DNAPairFreq)
+{
+  if ( !simParams->DNAPairOn
+    || (step % DNAPairFreq != 0) ) return;
 
   FullAtom *a = patch->atom.begin();
   const int numAtoms = patch->numAtoms;
-
-  BigReal force = 0;
-  BigReal torque = 0;
-  Vector del;
+  BigReal force = 0, torque = 0;
+  Vector del, center;
   ForceList *f = patch->f;
-  int ftag = Results::nbond;
+  // we call this function at steps of multiple
+  int ftags[2] = {Results::nbond, Results::slow};
 
   for ( int i = 0; i < numAtoms; i++ ) {
     int aid = a[i].id, dnaid = -1;
     if ( aid >= simParams->DNA1Start - 1
       && aid <= simParams->DNA1End - 1 ) {
       dnaid = 1;
+      center = simParams->DNA1Center;
     } else if ( aid >= simParams->DNA2Start - 1
              && aid <= simParams->DNA2End - 1 ) {
       dnaid = 2;
+      center = simParams->DNA2Center;
     } else {
       continue;
     }
     
-    // Warning a[i].position may be null
-    if ( dnaid == 1 ) {
-      force -= f[ftag][i].x;
-      del = a[i].position; // - simParams->DNA1Center;
-      torque -= del.x * (f[ftag][i].y) - del.y * (f[ftag][i].x);
-    } else if ( dnaid == 2 ) {
-      force += f[ftag][i].x;
-      del = a[i].position; // - simParams->DNA1Center;
-      torque += del.x * (f[ftag][i].y) - del.y * (f[ftag][i].x);
-    }
+    del = patch->lattice.delta(a[i].position, center);
 
-    //std::cout << step << ", " << dnaid << ", "
-    //    << aid << ", x: " << a[i].position
-    //    << ", f:" << f[ftag][i]
-    //    << ", del:" << del << ", torq " << torque << std::endl;
+    for ( int k = 0; k < 2; k++ ) {
+      int ftag = ftags[k];
+      if ( dnaid == 1 ) {
+        force -= f[ftag][i].x;
+      } else if ( dnaid == 2 ) {
+        force += f[ftag][i].x;
+        // assuming only DNA 2 is rotating
+        torque += del.x * f[ftag][i].y - del.y * f[ftag][i].x;
+      }
+    }
+    //if ( step == 1 ) {
+    //  CkPrintf("%d %d %d %d | x %g %g %g center %g %g %g del %g %g %g\n",
+    //      step, i, aid, dnaid, a[i].position.x, a[i].position.y, a[i].position.z,
+    //      center.x, center.y, center.z, del.x, del.y, del.z);
+    //}
   }
 
-  //std::cout << "Sequencer, step " << step
-  //  << ", force " << force << ", torque " << torque << "\n";
+  force *= 0.5;
+
+  //iout << "Sequencer, step " << step << ", force " << force << ", torque " << torque << "\n";
 
   reduction->item(REDUCTION_DNAPAIR_FORCE) += force;
   reduction->item(REDUCTION_DNAPAIR_TORQUE) += torque;

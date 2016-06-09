@@ -341,6 +341,7 @@ public:
         zVector DNA1Center;
         int DNA2Start, DNA2End;
         zVector DNA2Center;
+        char DNAPairMFFile[128];
         //****** END DNA pair changes
 
         //****** BEGIN SMD constraints changes

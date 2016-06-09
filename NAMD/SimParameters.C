@@ -1778,6 +1778,8 @@ void SimParameters::config_parser_dnapair(ParseOptions &opts) {
       "Ending index of the second DNA", &DNA2End);
    opts.require("DNAPairOn", "DNA2Center",
       "Center coordinates of the second DNA", &DNA2Center);
+   opts.optional("DNAPairOn", "DNAPairMFFile",
+       "output mean-force file", DNAPairMFFile);
 }
 
 void SimParameters::config_parser_boundary(ParseOptions &opts) {

@@ -48,7 +48,6 @@ enum {
   traceBarrierTag,
   accelMDRescaleFactorTag,
   adaptTemperatureTag, //Tag for adaptive tempering temperature updates to Sequencer
-  DNAPairCenterTag,
 #ifdef MEASURE_NAMD_WITH_PAPI
   papiMeasureTag,
 #endif
@@ -70,7 +69,6 @@ struct ControllerBroadcasts
   SimpleBroadcastObject<int> traceBarrier;
   SimpleBroadcastObject<Vector> accelMDRescaleFactor;
   SimpleBroadcastObject<BigReal> adaptTemperature;
-  SimpleBroadcastObject<Vector> DNAPairCenter;
 #ifdef MEASURE_NAMD_WITH_PAPI
   SimpleBroadcastObject<int> papiMeasureBarrier;
 #endif
@@ -86,7 +84,6 @@ struct ControllerBroadcasts
 #endif
     accelMDRescaleFactor(accelMDRescaleFactorTag, ldObjPtr),
     adaptTemperature(adaptTemperatureTag, ldObjPtr),
-    DNAPairCenter(DNAPairCenterTag, ldObjPtr),
     scriptBarrier(scriptBarrierTag, ldObjPtr),
 #ifdef MEASURE_NAMD_WITH_PAPI
 	papiMeasureBarrier(papiMeasureTag, ldObjPtr),

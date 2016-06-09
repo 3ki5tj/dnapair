@@ -2,7 +2,7 @@ src := $(wildcard *.h *.C)
 
 NAMD.patch::
 	echo $(src)
-	diff -u --exclude=".*" --exclude="*~" \
+	diff -u -wdB --exclude=".*" --exclude="*~" \
 	  ~/lwork/NAMD_2.11_Source/src \
 	  ~/lwork/NAMD_mods/NAMD_2.11_dnapair/src > $@
 

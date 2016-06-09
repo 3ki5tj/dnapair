@@ -388,6 +388,17 @@ extern "C" {
   typedef void (*namd_sighandler_t)(int);
 }
 
+void Controller::reduceDNAPair(int step, int DNAPairFreq, FILE *fp)
+{
+  if ( !simParams->DNAPairOn
+    || (step % DNAPairFreq != 0) ) return;
+  BigReal force = reduction->item(REDUCTION_DNAPAIR_FORCE);
+  BigReal torque = reduction->item(REDUCTION_DNAPAIR_TORQUE);
+  if ( fp != NULL ) {
+    fprintf(fp, "%d %.5f %.5f\n", step, force, torque);
+  }
+}
+
 void Controller::integrate(int scriptTask) {
     char traceNote[24];
   
@@ -406,14 +417,11 @@ void Controller::integrate(int scriptTask) {
       slowFreq = simParams->nonbondedFrequency;
     if ( step >= numberOfSteps ) slowFreq = nbondFreq = 1;
 
-    Vector DNA1Center, DNA2Center;
-    DNA1Center = origLattice.wrap_delta( simParams->DNA1Center );
-    //DNA1Center += simParams->DNA1Center;
-    DNA2Center = origLattice.wrap_delta( simParams->DNA2Center );
-    //DNA2Center += simParams->DNA2Center;
-    broadcast->DNAPairCenter.publish(1, DNA1Center);
-    broadcast->DNAPairCenter.publish(2, DNA2Center);
-    std::cout << "Controller " << DNA1Center << " " << DNA2Center << "\n";
+    // since slowFreq is always a multiple of nbondFreq
+    // we compute the DNA pair force and torque at slowFreq
+    int DNAPairFreq = slowFreq;
+    FILE *DNAPairFp = fopen(simParams->DNAPairMFFile, (step > 0 ? "a" : "w"));
+
 
   if ( scriptTask == SCRIPT_RUN ) {
 
@@ -425,13 +433,7 @@ void Controller::integrate(int scriptTask) {
     if ( zeroMomentum && dofull && ! (step % slowFreq) )
 						correctMomentum(step);
 
-
-    //collection->enqueueForces(step);
-    BigReal force = reduction->item(REDUCTION_DNAPAIR_FORCE);
-    BigReal torque = reduction->item(REDUCTION_DNAPAIR_TORQUE);
-    printf("Controller, step %d, force %g, torque %g\n",
-        step, force, torque);
-
+    reduceDNAPair(step, DNAPairFreq, DNAPairFp);
 
     printFepMessage(step);
     printTiMessage(step);
@@ -468,11 +470,7 @@ void Controller::integrate(int scriptTask) {
 	langevinPiston2(step);
         reassignVelocities(step);
         
-        //collection->enqueueForces(step);
-        BigReal force = reduction->item(REDUCTION_DNAPAIR_FORCE);
-        BigReal torque = reduction->item(REDUCTION_DNAPAIR_TORQUE);
-        std::cout << "Controller, step " << step
-          << ", force " << force << ", torque " << torque << "\n";
+        reduceDNAPair(step, DNAPairFreq, DNAPairFp);
 
         printDynamicsEnergies(step);
         outputFepEnergy(step);
@@ -524,6 +522,10 @@ void Controller::integrate(int scriptTask) {
 #if  PME_BARRIER
         cycleBarrier(dofull && !((step+1)%slowFreq),step);   // step before PME
 #endif
+    }
+
+    if ( DNAPairFp != NULL ) {
+      fclose(DNAPairFp);
     }
     // signal(SIGINT, oldhandler);
 }
