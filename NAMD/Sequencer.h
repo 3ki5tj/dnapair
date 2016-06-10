@@ -77,6 +77,7 @@ protected:
     void adaptTempUpdate(int); // adaptive tempering temperature update
 
     int dnapairFreq;
+    Vector dnapairCenter[2];
     void dnapairSubmit(int step);
 
     void rescaleVelocities(int);

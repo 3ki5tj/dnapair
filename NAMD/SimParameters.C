@@ -1766,18 +1766,14 @@ void SimParameters::config_parser_dnapair(ParseOptions &opts) {
    //// "constant" torque
    opts.optionalB("main", "dnapairOn", "Do we compute DNA pair force?",
       &dnapairOn, FALSE);
-   opts.require("dnapairOn", "dna1Start",
-      "Starting index of the first DNA", &dna1Start);
+   opts.require("dnapairOn", "dna1Begin",
+      "First atom index (1-based) of the first DNA", &dna1Begin);
    opts.require("dnapairOn", "dna1End",
-      "Ending index of the first DNA", &dna1End);
-   opts.require("dnapairOn", "dna1Center",
-      "Center coordinates of the first DNA", &dna1Center);
-   opts.require("dnapairOn", "DNA2Start",
-      "Starting index of the second DNA", &dna2Start);
+      "Last atom index (1-based) of the first DNA", &dna1End);
+   opts.require("dnapairOn", "DNA2Begin",
+      "First atom index (1-based) of the second DNA", &dna2Begin);
    opts.require("dnapairOn", "dna2End",
-      "Ending index of the second DNA", &dna2End);
-   opts.require("dnapairOn", "dna2Center",
-      "Center coordinates of the second DNA", &dna2Center);
+      "Last atom index (1-based) of the second DNA", &dna2End);
    strcpy(dnapairMFFile, "dnamf.dat");
    opts.optional("dnapairOn", "dnapairMFFile",
        "mean-force output file", dnapairMFFile);

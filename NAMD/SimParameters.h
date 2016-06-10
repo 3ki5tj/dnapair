@@ -337,10 +337,8 @@ public:
 
         //****** BEGIN DNA pair changes
         Bool dnapairOn;
-        int dna1Start, dna1End;
-        zVector dna1Center;
-        int dna2Start, dna2End;
-        zVector dna2Center;
+        int dna1Begin, dna1End;
+        int dna2Begin, dna2End;
         char dnapairMFFile[128];
         int dnapairMFFileFreq;
         char dnapairLog[128];

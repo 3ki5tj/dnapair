@@ -167,8 +167,8 @@ protected:
     int ldbSteps;
     void rebalanceLoad(int);
       int fflush_count;
-    void cycleBarrier(int,int);
-
+    void cycleBarrier(int,int);	
+	
 	void traceBarrier(int, int);
 
 #ifdef MEASURE_NAMD_WITH_PAPI
@@ -256,6 +256,7 @@ protected:
    BigReal adaptTempDtMax;
    ofstream_namd adaptTempRestartFile;
 
+    void dnapairInit(int scriptTask, int freq);
     void dnapairReduce(int step);
     void dnapairLoad(void);
     void dnapairSave(int step);
@@ -264,6 +265,7 @@ protected:
     // the second index is for counts, sum, sum of squares
     BigReal dnapairMF[2][3];
     FILE *dnapairFpLog; // file pointer for the log file
+    Vector dnapairCenter[2]; // center positions of the two DNAs
 
 private:
     CthThread thread;

@@ -388,6 +388,44 @@ extern "C" {
   typedef void (*namd_sighandler_t)(int);
 }
 
+void Controller::dnapairInit(int scriptTask, int freq)
+{
+  dnapairFreq = freq;
+  const char *dnapairLogmode = "w";
+
+  if ( scriptTask == SCRIPT_CONTINUE ) {
+    dnapairLogmode = "a";
+    dnapairLoad();
+  }
+  // open the log file
+  dnapairFpLog = fopen(simParams->dnapairLog, dnapairLogmode);
+  for ( int k = 0; k < 2; k++ ) {
+    dnapairMF[k][0] = dnapairMF[k][1] = dnapairMF[k][2] = 0;
+  }
+
+  // Try to compute the centers of mass
+  int i, beg[2], end[2];
+  beg[0] = simParams->dna1Begin - 1;
+  end[0] = simParams->dna1End - 1;
+  beg[1] = simParams->dna2Begin - 1;
+  end[1] = simParams->dna2End - 1;
+  for ( int dna = 0; dna < 2; dna++ ) {
+    Vector pos, com(0, 0, 0);
+    BigReal mass, mtot = 0;
+    //iout << dna << " " << beg[dna] << " " << end[dna] << "\n";
+    for ( i = beg[dna]; i <= end[dna]; i++ ) {
+      state->pdb->get_position_for_atom(&pos, i);
+      mass = state->molecule->atommass(i);
+      com += pos * mass;
+      mtot += mass;
+    }
+    com *= 1.0 / mtot;
+    iout << "DNA " << dna + 1 << ": " << com << ", mass " << mtot << "\n";
+    dnapairCenter[dna] = com;
+    broadcast->dnapairCenter.publish(dna, com);
+  }
+}
+
 void Controller::dnapairReduce(int step)
 {
   if ( !simParams->dnapairOn
@@ -467,17 +505,8 @@ void Controller::integrate(int scriptTask) {
 
     // since slowFreq is always a multiple of nbondFreq
     // we compute the DNA pair force and torque at slowFreq
-    dnapairFreq = slowFreq;
-    const char *dnapairLogmode = "w";
-    if ( step > 0 ) {
-      dnapairLogmode = "a";
-      dnapairLoad();
-    }
-    // open the log file
-    dnapairFpLog = fopen(simParams->dnapairLog, dnapairLogmode);
-    for ( int k = 0; k < 2; k++ ) {
-      dnapairMF[k][0] = dnapairMF[k][1] = dnapairMF[k][2] = 0;
-    }
+    dnapairInit(scriptTask, slowFreq);
+
   if ( scriptTask == SCRIPT_RUN ) {
 
     reassignVelocities(step);  // only for full-step velecities

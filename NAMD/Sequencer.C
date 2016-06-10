@@ -259,6 +259,11 @@ void Sequencer::integrate(int scriptTask) {
 
     const int reassignFreq = simParams->reassignFreq;
 
+    // receive the center positions of the two DNAs
+    dnapairCenter[0] = broadcast->dnapairCenter.get(0);
+    dnapairCenter[1] = broadcast->dnapairCenter.get(1);
+    //iout << dnapairCenter[0] << " | " << dnapairCenter[1] << "\n";
+
   if ( scriptTask == SCRIPT_RUN ) {
 
 //    printf("Doing initial rattle\n");
@@ -790,25 +795,24 @@ void Sequencer::dnapairSubmit(int step)
 
   for ( int i = 0; i < numAtoms; i++ ) {
     int aid = a[i].id, dnaid = -1;
-    if ( aid >= simParams->dna1Start - 1
+    if ( aid >= simParams->dna1Begin - 1
       && aid <= simParams->dna1End - 1 ) {
-      dnaid = 1;
-      center = simParams->dna1Center;
-    } else if ( aid >= simParams->dna2Start - 1
+      dnaid = 0;
+    } else if ( aid >= simParams->dna2Begin - 1
              && aid <= simParams->dna2End - 1 ) {
-      dnaid = 2;
-      center = simParams->dna2Center;
+      dnaid = 1;
     } else {
       continue;
     }
     
+    center = dnapairCenter[dnaid];
     del = patch->lattice.delta(a[i].position, center);
 
     for ( int k = 0; k < 2; k++ ) {
       int ftag = ftags[k];
-      if ( dnaid == 1 ) {
+      if ( dnaid == 0 ) {
         force -= f[ftag][i].x;
-      } else if ( dnaid == 2 ) {
+      } else if ( dnaid == 1 ) {
         force += f[ftag][i].x;
         // assuming only DNA 2 is rotating
         torque += del.x * f[ftag][i].y - del.y * f[ftag][i].x;

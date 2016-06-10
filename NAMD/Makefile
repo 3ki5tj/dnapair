@@ -11,7 +11,7 @@ NAMD.patch::
 ln::
 	ln -f `diff -qrwdB --exclude=".*" --exclude="*~" $(srcdir) $(destdir) | cut -f 4  -d" "` .
 
-Bossman:
+Bossman: NAMD.patch
 	$(MAKE) -C .. $@
 
 clean:
