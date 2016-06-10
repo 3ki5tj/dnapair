@@ -54,7 +54,6 @@ protected:
     friend class CheckpointMsg;
     virtual void algorithm(void);	// subclasses redefine this method
 
-    void reduceDNAPair(int step, int DNAPairFreq, FILE *fp);
     void integrate(int); // Verlet integrator
     void minimize(); // CG minimizer
       RequireReduction *min_reduction;
@@ -256,6 +255,15 @@ protected:
    BigReal adaptTempDtMin;
    BigReal adaptTempDtMax;
    ofstream_namd adaptTempRestartFile;
+
+    void dnapairReduce(int step);
+    void dnapairLoad(void);
+    void dnapairSave(int step);
+    int dnapairFreq; // frequency of writing data file
+    // the first index is 0 for force or 1 for torque
+    // the second index is for counts, sum, sum of squares
+    BigReal dnapairMF[2][3];
+    FILE *dnapairFpLog; // file pointer for the log file
 
 private:
     CthThread thread;

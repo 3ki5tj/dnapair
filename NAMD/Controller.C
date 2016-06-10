@@ -388,15 +388,63 @@ extern "C" {
   typedef void (*namd_sighandler_t)(int);
 }
 
-void Controller::reduceDNAPair(int step, int DNAPairFreq, FILE *fp)
+void Controller::dnapairReduce(int step)
 {
-  if ( !simParams->DNAPairOn
-    || (step % DNAPairFreq != 0) ) return;
-  BigReal force = reduction->item(REDUCTION_DNAPAIR_FORCE);
-  BigReal torque = reduction->item(REDUCTION_DNAPAIR_TORQUE);
-  if ( fp != NULL ) {
-    fprintf(fp, "%d %.5f %.5f\n", step, force, torque);
+  if ( !simParams->dnapairOn
+    || (step % dnapairFreq != 0) ) return;
+  BigReal mf[2];
+  mf[0] = reduction->item(REDUCTION_DNAPAIR_FORCE);
+  mf[1] = reduction->item(REDUCTION_DNAPAIR_TORQUE);
+  for ( int k = 0; k < 2; k++ ) {
+    dnapairMF[k][0] += 1;
+    dnapairMF[k][1] += mf[k];
+    dnapairMF[k][2] += mf[k] * mf[k];
   }
+  if ( dnapairFpLog != NULL ) {
+    fprintf(dnapairFpLog, "%d %.5f %.5f\n", step, mf[0], mf[1]);
+  }
+}
+
+// save mean-force moments
+void Controller::dnapairSave(int step)
+{
+  if ( !simParams->dnapairOn ) return;
+  if ( step > 0 && (step % dnapairFreq != 0) ) return;
+  FILE *fp = fopen(simParams->dnapairMFFile, "w");
+  if ( fp == NULL ) return;
+  BigReal ave[2], std[2];
+  for ( int k = 0; k < 2; k++ ) {
+    ave[k] = dnapairMF[k][1] / (dnapairMF[k][0] + 1e-30);
+    std[k] = sqrt( dnapairMF[k][2] / (dnapairMF[k][0] + 1e-30) - ave[k] * ave[k] );
+  }
+  fprintf(fp, "%g %g %g %g %g %g\n",
+      ave[0], std[0], dnapairMF[0][0],
+      ave[1], std[1], dnapairMF[1][0]);
+  fclose(fp);
+}
+
+// load previous mean-force moments
+void Controller::dnapairLoad(void)
+{
+  FILE *fp = fopen(simParams->dnapairMFFile, "r");
+  if ( fp == NULL ) return;
+  BigReal num[2], ave[2], std[2];
+  int cnt = fscanf(fp, "%lf%lf%lf%lf%lf%lf",
+      &ave[0], &std[0], &num[0],
+      &ave[1], &std[1], &num[1]);
+  if ( cnt != 6 ) {
+    iout << "dnapairLoad: Error loading "
+         << simParams->dnapairMFFile << "\n";
+    fclose(fp);
+    return;
+  }
+  // compute the sums from the moments
+  for ( int k = 0; k < 2; k++ ) {
+    dnapairMF[k][0] = num[k];
+    dnapairMF[k][1] = ave[k] * num[k];
+    dnapairMF[k][2] = (std[k] * std[k] + ave[k] * ave[k]) * num[k];
+  }
+  fclose(fp);
 }
 
 void Controller::integrate(int scriptTask) {
@@ -419,10 +467,17 @@ void Controller::integrate(int scriptTask) {
 
     // since slowFreq is always a multiple of nbondFreq
     // we compute the DNA pair force and torque at slowFreq
-    int DNAPairFreq = slowFreq;
-    FILE *DNAPairFp = fopen(simParams->DNAPairMFFile, (step > 0 ? "a" : "w"));
-
-
+    dnapairFreq = slowFreq;
+    const char *dnapairLogmode = "w";
+    if ( step > 0 ) {
+      dnapairLogmode = "a";
+      dnapairLoad();
+    }
+    // open the log file
+    dnapairFpLog = fopen(simParams->dnapairLog, dnapairLogmode);
+    for ( int k = 0; k < 2; k++ ) {
+      dnapairMF[k][0] = dnapairMF[k][1] = dnapairMF[k][2] = 0;
+    }
   if ( scriptTask == SCRIPT_RUN ) {
 
     reassignVelocities(step);  // only for full-step velecities
@@ -433,7 +488,7 @@ void Controller::integrate(int scriptTask) {
     if ( zeroMomentum && dofull && ! (step % slowFreq) )
 						correctMomentum(step);
 
-    reduceDNAPair(step, DNAPairFreq, DNAPairFp);
+    dnapairReduce(step);
 
     printFepMessage(step);
     printTiMessage(step);
@@ -470,7 +525,7 @@ void Controller::integrate(int scriptTask) {
 	langevinPiston2(step);
         reassignVelocities(step);
         
-        reduceDNAPair(step, DNAPairFreq, DNAPairFp);
+        dnapairReduce(step);
 
         printDynamicsEnergies(step);
         outputFepEnergy(step);
@@ -524,9 +579,10 @@ void Controller::integrate(int scriptTask) {
 #endif
     }
 
-    if ( DNAPairFp != NULL ) {
-      fclose(DNAPairFp);
+    if ( dnapairFpLog != NULL ) {
+      fclose(dnapairFpLog);
     }
+    dnapairSave(-1);
     // signal(SIGINT, oldhandler);
 }
 

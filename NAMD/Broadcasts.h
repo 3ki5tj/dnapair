@@ -68,12 +68,12 @@ struct ControllerBroadcasts
   SimpleBroadcastObject<int> scriptBarrier;
   SimpleBroadcastObject<int> traceBarrier;
   SimpleBroadcastObject<Vector> accelMDRescaleFactor;
-  SimpleBroadcastObject<BigReal> adaptTemperature;
+  SimpleBroadcastObject<BigReal> adaptTemperature; 
 #ifdef MEASURE_NAMD_WITH_PAPI
   SimpleBroadcastObject<int> papiMeasureBarrier;
 #endif
 
-  ControllerBroadcasts(const LDObjHandle *ldObjPtr = 0) :
+  ControllerBroadcasts(const LDObjHandle *ldObjPtr = 0) : 
     velocityRescaleFactor(velocityRescaleFactorTag, ldObjPtr),
     positionRescaleFactor(positionRescaleFactorTag, ldObjPtr),
     tcoupleCoefficient(tcoupleCoefficientTag, ldObjPtr),
@@ -83,7 +83,7 @@ struct ControllerBroadcasts
     cycleBarrier(cycleBarrierTag, ldObjPtr),
 #endif
     accelMDRescaleFactor(accelMDRescaleFactorTag, ldObjPtr),
-    adaptTemperature(adaptTemperatureTag, ldObjPtr),
+    adaptTemperature(adaptTemperatureTag, ldObjPtr), 
     scriptBarrier(scriptBarrierTag, ldObjPtr),
 #ifdef MEASURE_NAMD_WITH_PAPI
 	papiMeasureBarrier(papiMeasureTag, ldObjPtr),

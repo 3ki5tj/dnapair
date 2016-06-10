@@ -218,7 +218,7 @@ void Sequencer::integrate(int scriptTask) {
 
     // since slowFreq is always a multiple of nonbondedFrequency
     // we compute the DNA pair force and torque and slowFreq
-    int DNAPairFreq = slowFreq;
+    dnapairFreq = slowFreq;
 
     const Bool accelMDOn = simParams->accelMDOn;
     const Bool accelMDdihe = simParams->accelMDdihe;
@@ -308,7 +308,7 @@ void Sequencer::integrate(int scriptTask) {
     submitHalfstep(step);
     if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
-    submitDNAPairForceTorque(step, DNAPairFreq);
+    dnapairSubmit(step);
 
     if ( ! commOnly ) {
       addForceToMomentum(-0.5*timestep);
@@ -431,7 +431,7 @@ void Sequencer::integrate(int scriptTask) {
       submitHalfstep(step);
       if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
-      submitDNAPairForceTorque(step, DNAPairFreq);
+      dnapairSubmit(step);
 
       if ( ! commOnly ) {
         addForceToMomentum(-0.5*timestep);
@@ -775,10 +775,10 @@ if ( simParams->zeroMomentumAlt ) {
   reduction->item(REDUCTION_MOMENTUM_MASS) += mass;
 }
 
-void Sequencer::submitDNAPairForceTorque(int step, int DNAPairFreq)
+void Sequencer::dnapairSubmit(int step)
 {
-  if ( !simParams->DNAPairOn
-    || (step % DNAPairFreq != 0) ) return;
+  if ( !simParams->dnapairOn
+    || (step % dnapairFreq != 0) ) return;
 
   FullAtom *a = patch->atom.begin();
   const int numAtoms = patch->numAtoms;
@@ -790,14 +790,14 @@ void Sequencer::submitDNAPairForceTorque(int step, int DNAPairFreq)
 
   for ( int i = 0; i < numAtoms; i++ ) {
     int aid = a[i].id, dnaid = -1;
-    if ( aid >= simParams->DNA1Start - 1
-      && aid <= simParams->DNA1End - 1 ) {
+    if ( aid >= simParams->dna1Start - 1
+      && aid <= simParams->dna1End - 1 ) {
       dnaid = 1;
-      center = simParams->DNA1Center;
-    } else if ( aid >= simParams->DNA2Start - 1
-             && aid <= simParams->DNA2End - 1 ) {
+      center = simParams->dna1Center;
+    } else if ( aid >= simParams->dna2Start - 1
+             && aid <= simParams->dna2End - 1 ) {
       dnaid = 2;
-      center = simParams->DNA2Center;
+      center = simParams->dna2Center;
     } else {
       continue;
     }

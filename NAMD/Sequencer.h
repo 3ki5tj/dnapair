@@ -48,7 +48,6 @@ protected:
     void submitCollections(int step, int zeroVel = 0);
 
     void submitMomentum(int step);
-    void submitDNAPairForceTorque(int step, int DNAPairFreq);
     void correctMomentum(int step, BigReal drifttime);
 
     void saveForce(const int ftag = Results::normal);
@@ -76,6 +75,9 @@ protected:
 
     BigReal adaptTempT;         // adaptive tempering temperature
     void adaptTempUpdate(int); // adaptive tempering temperature update
+
+    int dnapairFreq;
+    void dnapairSubmit(int step);
 
     void rescaleVelocities(int);
     void rescaleaccelMD(int, int, int); // for accelMD

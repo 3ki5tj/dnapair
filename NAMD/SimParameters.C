@@ -1764,22 +1764,29 @@ void SimParameters::config_parser_constorque(ParseOptions &opts) {
 
 void SimParameters::config_parser_dnapair(ParseOptions &opts) {
    //// "constant" torque
-   opts.optionalB("main", "DNAPairOn", "Do we compute DNA pair force?",
-      &DNAPairOn, FALSE);
-   opts.require("DNAPairOn", "DNA1Start",
-      "Starting index of the first DNA", &DNA1Start);
-   opts.require("DNAPairOn", "DNA1End",
-      "Ending index of the first DNA", &DNA1End);
-   opts.require("DNAPairOn", "DNA1Center",
-      "Center coordinates of the first DNA", &DNA1Center);
-   opts.require("DNAPairOn", "DNA2Start",
-      "Starting index of the second DNA", &DNA2Start);
-   opts.require("DNAPairOn", "DNA2End",
-      "Ending index of the second DNA", &DNA2End);
-   opts.require("DNAPairOn", "DNA2Center",
-      "Center coordinates of the second DNA", &DNA2Center);
-   opts.optional("DNAPairOn", "DNAPairMFFile",
-       "output mean-force file", DNAPairMFFile);
+   opts.optionalB("main", "dnapairOn", "Do we compute DNA pair force?",
+      &dnapairOn, FALSE);
+   opts.require("dnapairOn", "dna1Start",
+      "Starting index of the first DNA", &dna1Start);
+   opts.require("dnapairOn", "dna1End",
+      "Ending index of the first DNA", &dna1End);
+   opts.require("dnapairOn", "dna1Center",
+      "Center coordinates of the first DNA", &dna1Center);
+   opts.require("dnapairOn", "DNA2Start",
+      "Starting index of the second DNA", &dna2Start);
+   opts.require("dnapairOn", "dna2End",
+      "Ending index of the second DNA", &dna2End);
+   opts.require("dnapairOn", "dna2Center",
+      "Center coordinates of the second DNA", &dna2Center);
+   strcpy(dnapairMFFile, "dnamf.dat");
+   opts.optional("dnapairOn", "dnapairMFFile",
+       "mean-force output file", dnapairMFFile);
+   opts.optional("dnapairMFFile", "dnapairMFFileFreq",
+       "frequency of writing mean-force output file",
+       &dnapairMFFileFreq, 10000);
+   strcpy(dnapairLog, "dnapair.log");
+   opts.optional("dnapairOn", "dnapairLog",
+       "log file of DNA pair", dnapairLog);
 }
 
 void SimParameters::config_parser_boundary(ParseOptions &opts) {
