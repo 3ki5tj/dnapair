@@ -216,10 +216,6 @@ void Sequencer::integrate(int scriptTask) {
 					maxForceMerged = Results::slow;
     if ( doFullElectrostatics ) maxForceUsed = Results::slow;
 
-    // since slowFreq is always a multiple of nonbondedFrequency
-    // we compute the DNA pair force and torque and slowFreq
-    dnapairFreq = slowFreq;
-
     const Bool accelMDOn = simParams->accelMDOn;
     const Bool accelMDdihe = simParams->accelMDdihe;
     const Bool accelMDdual = simParams->accelMDdual;
@@ -259,10 +255,9 @@ void Sequencer::integrate(int scriptTask) {
 
     const int reassignFreq = simParams->reassignFreq;
 
-    // receive the center positions of the two DNAs
-    dnapairCenter[0] = broadcast->dnapairCenter.get(0);
-    dnapairCenter[1] = broadcast->dnapairCenter.get(1);
-    //iout << dnapairCenter[0] << " | " << dnapairCenter[1] << "\n";
+    // since slowFreq is always a multiple of nonbondedFrequency
+    // we compute the DNA pair force and torque and slowFreq
+    dnapairInit(scriptTask, slowFreq);
 
   if ( scriptTask == SCRIPT_RUN ) {
 
@@ -780,6 +775,22 @@ if ( simParams->zeroMomentumAlt ) {
   reduction->item(REDUCTION_MOMENTUM_MASS) += mass;
 }
 
+void Sequencer::dnapairInit(int scriptTask, int freq)
+{
+  if ( !simParams->dnapairOn ) return;
+
+  dnapairFreq = freq;
+  if ( simParams->dnapairFreq > dnapairFreq ) {
+    // adjust dnapairFreq to be a multiple of freq
+    dnapairFreq = simParams->dnapairFreq / freq * freq;
+  }
+
+  // receive the center positions of the two DNAs
+  dnapairCenter[0] = broadcast->dnapairCenter.get(0);
+  dnapairCenter[1] = broadcast->dnapairCenter.get(1);
+  //iout << dnapairCenter[0] << " | " << dnapairCenter[1] << "\n";
+}
+
 void Sequencer::dnapairSubmit(int step)
 {
   if ( !simParams->dnapairOn
@@ -804,7 +815,7 @@ void Sequencer::dnapairSubmit(int step)
     } else {
       continue;
     }
-    
+
     center = dnapairCenter[dnaid];
     del = patch->lattice.delta(a[i].position, center);
 

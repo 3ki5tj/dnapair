@@ -390,7 +390,14 @@ extern "C" {
 
 void Controller::dnapairInit(int scriptTask, int freq)
 {
+  if ( !simParams->dnapairOn ) return;
+
   dnapairFreq = freq;
+  if ( simParams->dnapairFreq > dnapairFreq ) {
+    // adjust dnapairFreq to be a multiple of freq
+    dnapairFreq = simParams->dnapairFreq / freq * freq;
+  }
+
   const char *dnapairLogmode = "w";
 
   if ( scriptTask == SCRIPT_CONTINUE ) {
@@ -464,6 +471,7 @@ void Controller::dnapairSave(int step)
 // load previous mean-force moments
 void Controller::dnapairLoad(void)
 {
+  if ( !simParams->dnapairOn ) return;
   FILE *fp = fopen(simParams->dnapairMFFile, "r");
   if ( fp == NULL ) return;
   BigReal num[2], ave[2], std[2];
@@ -483,6 +491,16 @@ void Controller::dnapairLoad(void)
     dnapairMF[k][2] = (std[k] * std[k] + ave[k] * ave[k]) * num[k];
   }
   fclose(fp);
+}
+
+// finishing up
+void Controller::dnapairDone(void)
+{
+  if ( !simParams->dnapairOn ) return;
+  if ( dnapairFpLog != NULL ) {
+    fclose(dnapairFpLog);
+  }
+  dnapairSave(-1);
 }
 
 void Controller::integrate(int scriptTask) {
@@ -608,10 +626,7 @@ void Controller::integrate(int scriptTask) {
 #endif
     }
 
-    if ( dnapairFpLog != NULL ) {
-      fclose(dnapairFpLog);
-    }
-    dnapairSave(-1);
+    dnapairDone();
     // signal(SIGINT, oldhandler);
 }
 

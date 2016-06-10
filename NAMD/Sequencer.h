@@ -78,6 +78,7 @@ protected:
 
     int dnapairFreq;
     Vector dnapairCenter[2];
+    void dnapairInit(int scriptTask, int freq);
     void dnapairSubmit(int step);
 
     void rescaleVelocities(int);

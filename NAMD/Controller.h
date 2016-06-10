@@ -260,6 +260,7 @@ protected:
     void dnapairReduce(int step);
     void dnapairLoad(void);
     void dnapairSave(int step);
+    void dnapairDone(void);
     int dnapairFreq; // frequency of writing data file
     // the first index is 0 for force or 1 for torque
     // the second index is for counts, sum, sum of squares

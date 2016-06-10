@@ -337,6 +337,7 @@ public:
 
         //****** BEGIN DNA pair changes
         Bool dnapairOn;
+        int dnapairFreq;
         int dna1Begin, dna1End;
         int dna2Begin, dna2End;
         char dnapairMFFile[128];

@@ -1766,6 +1766,8 @@ void SimParameters::config_parser_dnapair(ParseOptions &opts) {
    //// "constant" torque
    opts.optionalB("main", "dnapairOn", "Do we compute DNA pair force?",
       &dnapairOn, FALSE);
+   opts.optional("main", "dnapairFreq", "Frequency of computing DNA pair force",
+      &dnapairFreq, 0);
    opts.require("dnapairOn", "dna1Begin",
       "First atom index (1-based) of the first DNA", &dna1Begin);
    opts.require("dnapairOn", "dna1End",
