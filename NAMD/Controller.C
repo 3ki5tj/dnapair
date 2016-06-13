@@ -446,7 +446,7 @@ void Controller::dnapairReduce(int step)
     dnapairMF[k][2] += mf[k] * mf[k];
   }
   if ( dnapairFpLog != NULL ) {
-    fprintf(dnapairFpLog, "%d %.5f %.5f\n", step, mf[0], mf[1]);
+    fprintf(dnapairFpLog, "%d %.3f %.3f\n", step, mf[0], mf[1]);
   }
 }
 

@@ -331,7 +331,7 @@ int main(int argc, char **argv)
 
   for ( i = 1; i < argc; i++ ) {
     if ( argv[i][0] == '-' ) {
-      if ( strstr(argv[i], "symm") ) {
+      if ( strstr(argv[i], "sym") ) {
         dosymmtorq = 1;
       }
     } else {
