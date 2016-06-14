@@ -440,11 +440,17 @@ void Controller::dnapairReduce(int step)
   BigReal mf[2];
   mf[0] = reduction->item(REDUCTION_DNAPAIR_FORCE);
   mf[1] = reduction->item(REDUCTION_DNAPAIR_TORQUE);
-  for ( int k = 0; k < 2; k++ ) {
-    dnapairMF[k][0] += 1;
-    dnapairMF[k][1] += mf[k];
-    dnapairMF[k][2] += mf[k] * mf[k];
+
+  // accumulate data for the mean-force moments
+  if ( step * simParam->dt >= simParams->dnapairEquilTime ) {
+    for ( int k = 0; k < 2; k++ ) {
+      dnapairMF[k][0] += 1;
+      dnapairMF[k][1] += mf[k];
+      dnapairMF[k][2] += mf[k] * mf[k];
+    }
   }
+
+  // write the output file
   if ( dnapairFpLog != NULL ) {
     fprintf(dnapairFpLog, "%d %.3f %.3f\n", step, mf[0], mf[1]);
   }

@@ -1785,6 +1785,8 @@ void SimParameters::config_parser_dnapair(ParseOptions &opts) {
    strcpy(dnapairLog, "dnapair.log");
    opts.optional("dnapairOn", "dnapairLog",
        "log file of DNA pair", dnapairLog);
+   opts.optional("dnapairOn", "dnapairEquilTime",
+       "equilibration time (during which no mean-force moments are collected) in ps", dnapairEquilTime);
 }
 
 void SimParameters::config_parser_boundary(ParseOptions &opts) {

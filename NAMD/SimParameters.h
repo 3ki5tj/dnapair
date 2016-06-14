@@ -343,6 +343,7 @@ public:
         char dnapairMFFile[128];
         int dnapairMFFileFreq;
         char dnapairLog[128];
+        BigReal dnapairEquilTime;
         //****** END DNA pair changes
 
         //****** BEGIN SMD constraints changes   
