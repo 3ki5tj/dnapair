@@ -400,12 +400,17 @@ void Controller::dnapairInit(int scriptTask, int freq)
 
   const char *dnapairLogmode = "w";
 
-  if ( scriptTask == SCRIPT_CONTINUE ) {
+  //CkPrintf("dnapairInit: scriptTask %d, cont. %d, first step %d\n", scriptTask, SCRIPT_CONTINUE, simParams->firstTimestep);
+  if ( scriptTask == SCRIPT_CONTINUE
+    || simParams->firstTimestep > 1 
+    || simParams->dnapairAlwaysAppend ) {
     dnapairLogmode = "a";
     dnapairLoad();
   }
+
   // open the log file
   dnapairFpLog = fopen(simParams->dnapairLog, dnapairLogmode);
+
   for ( int k = 0; k < 2; k++ ) {
     dnapairMF[k][0] = dnapairMF[k][1] = dnapairMF[k][2] = 0;
   }
@@ -431,18 +436,21 @@ void Controller::dnapairInit(int scriptTask, int freq)
     dnapairCenter[dna] = com;
     broadcast->dnapairCenter.publish(dna, com);
   }
+  Vector diff = dnapairCenter[1] - dnapairCenter[0];
+  iout << "The two DNAs are separated by " << diff.length() << "\n";
 }
 
 void Controller::dnapairReduce(int step)
 {
   if ( !simParams->dnapairOn
     || (step % dnapairFreq != 0) ) return;
+
   BigReal mf[2];
   mf[0] = reduction->item(REDUCTION_DNAPAIR_FORCE);
   mf[1] = reduction->item(REDUCTION_DNAPAIR_TORQUE);
 
   // accumulate data for the mean-force moments
-  if ( step * simParam->dt >= simParams->dnapairEquilTime ) {
+  if ( step * simParams->dt >= simParams->dnapairEquilTime ) {
     for ( int k = 0; k < 2; k++ ) {
       dnapairMF[k][0] += 1;
       dnapairMF[k][1] += mf[k];

@@ -1,4 +1,4 @@
-src := $(wildcard *.h *.C)
+src := $(wildcard *.h *.C *.ci)
 
 srcdir = ~/lwork/NAMD_2.11_Source/src
 destdir = ~/lwork/NAMD_mods/NAMD_2.11_dnapair/src
