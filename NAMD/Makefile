@@ -5,7 +5,7 @@ destdir = ~/lwork/NAMD_mods/NAMD_2.11_dnapair/src
 
 NAMD.patch::
 	$(MAKE) ln
-	diff -u -wdB --exclude=".*" --exclude="*~" $(srcdir) $(destdir) > $@
+	diff -u -wdB --exclude=".*" --exclude="*~" $(srcdir) $(destdir) > $@; [ $$? -eq 1 ]
 
 # make links
 ln::

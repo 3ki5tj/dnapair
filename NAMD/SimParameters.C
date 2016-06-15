@@ -1786,7 +1786,7 @@ void SimParameters::config_parser_dnapair(ParseOptions &opts) {
    opts.optional("dnapairOn", "dnapairLog",
        "log file of DNA pair", dnapairLog);
    opts.optional("dnapairOn", "dnapairEquilTime",
-       "equilibration time (during which no mean-force moments are collected) in ps",
+       "equilibration time (during which no mean-force moments are collected) in fs",
        &dnapairEquilTime, 0.0);
    opts.optionalB("dnapairOn", "dnapairAlwaysAppend",
        "always try to append .log and data file", &dnapairAlwaysAppend, FALSE);
