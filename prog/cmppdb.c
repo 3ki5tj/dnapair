@@ -1,4 +1,4 @@
-/* compare the coordinats from two files */
+/* compare the coordinates of the two DNAs in a single PDB file */
 #include "util.h"
 #include "mat.h"
 #include "com.h"
@@ -10,7 +10,7 @@ int ns = 1899; /* number of atoms in single DNA */
 int usemass = 1;
 
 
-static vct *loadpdb(const char *fn, int np)
+static vct *loadpdb(const char *fn, int np, char (*anames)[8])
 {
   double (*x)[3], r[3];
   FILE *fp;
@@ -28,11 +28,15 @@ static vct *loadpdb(const char *fn, int np)
     if ( strncmp(s, "ATOM  ", 6) != 0 ) {
       continue;
     }
+    /* copy the atom name */
+    strncpy(anames[id], s + 12, 4);
+    strstrip(anames[id]);
 
     sscanf(s + 30, "%lf%lf%lf", &r[0], &r[1], &r[2]);
     x[id][0] = r[0];
     x[id][1] = r[1];
     x[id][2] = r[2];
+    //printf("%d %s %g %g %g\n", id, anames[id], x[id][0], x[id][1], x[id][2]); getchar();
     id += 1;
     if ( id >= np ) break;
   }
@@ -49,12 +53,14 @@ int main(int argc, char **argv)
   double rot[3][3], trans[3], xc1[3], xc2[3];
   double rmsd;
   int np = ns * 2;
+  char (*anames)[8];
 
   if ( argc >= 2 ) {
     fnin = argv[1];
   }
 
-  x = loadpdb(fnin, np);
+  xnew(anames, np);
+  x = loadpdb(fnin, np, anames);
 
   if ( usemass ) {
     xnew(mass, np);

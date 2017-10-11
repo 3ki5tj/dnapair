@@ -113,10 +113,12 @@ __inline static int xf_load(xf_t *xf, const char *fn,
         xf->x[id][0] = atof(tok[1]);
         xf->x[id][1] = atof(tok[2]);
         xf->x[id][2] = atof(tok[3]);
+        //printf("frame %d, id %d\n", xf->nfr, id);
       }
 
       id += 1;
     }
+    //printf("read %d/%d, id %d from %s\n", i, np, id, fn); getchar();
     /* something wrong has happened */
     if ( i < np ) break;
 
